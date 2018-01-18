@@ -1,0 +1,208 @@
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright 2018 SerialLab LLC.  All rights reserved.
+
+import uuid
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
+from quartet_epcis.app_models.EPCIS import choices
+
+
+class UUIDModel(models.Model):
+    '''
+    A base model which uses UUIDs for primary key values.
+    '''
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text=_('Unique ID'),
+        verbose_name=_('Unique ID'))
+
+    class Meta:
+        abstract = True
+
+
+class SourceModel(models.Model):
+    '''
+    Abstract model class for any classes that reference a UUIDModel
+    super-class.  Includes the UUID model UUID and a reference to the
+    object type.
+    '''
+    source_event_id = models.UUIDField(
+        help_text=_('The UUID of the source event within the '
+                    'Quartet database.'),
+        verbose_name=_('Source Event UUID'),
+        null=False
+    )
+    source_event_type = models.CharField(
+        max_length=2,
+        choices=choices.EVENT_TYPE_CHOICES,
+        help_text=_('The type of originating event: Object, Aggregation, '
+                    'Transaction or Transformation.'),
+        verbose_name=_('Source Event Type')
+    )
+    class Meta:
+        abstract = True
+
+
+class EPCISEvent(UUIDModel):
+    '''
+    The base EPCIS event as defined by GS1 on page 38 of the EPCIS 1.2 draft.
+    '''
+    event_time = models.DateTimeField(
+        db_index=True,
+        null=False,
+        editable=False,
+        help_text=_('The date and time at which the EPCIS Capturing '
+                    'Application asserts the event occurred.'),
+        verbose_name=_('Event Time')
+    )
+    event_timezone_offset = models.CharField(
+        max_length=6,
+        null=True,
+        help_text=_('The time zone offset in effect at the '
+                    'time and place the event occurred, expressed as an '
+                    'offset from UTC'),
+        verbose_name=_('Event Timezone Offset'),
+        default='+00:00'
+    )
+    record_time = models.DateTimeField(
+        null=True,
+        help_text=_('The date and time at which this event was'
+                    ' recorded by an EPCIS Repository.'),
+        verbose_name=_('Record Time'),
+        default=timezone.now
+    )
+    event_id = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('An identifier for this event as specified by the '
+                    'capturing application, globally unique across all events '
+                    'other than error declarations. Not to be confused with '
+                    'the unique id/primary key for events within a database.'),
+        verbose_name=_('Event ID')
+    )
+
+
+class EPCISBusinessEvent(UUIDModel):
+    '''
+    Abstract base-class for super-classes with an Action,
+    biz step, biz location, etc...basically
+    every main EPCIS class except the TransformationEvent class.
+    '''
+    action = models.CharField(
+        max_length=5,
+        choices=choices.ACTION_CHOICES,
+        null=False,
+        help_text=_('How this event relates to the lifecycle of the '
+                    'EPCs named in this event.'),
+        verbose_name=_('Action')
+    )
+    biz_step = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('The business step of which this event was a part.'),
+        verbose_name=_('Business Step')
+    )
+    disposition = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('The business condition of the objects associated '
+                    'with the EPCs, presumed to hold true until '
+                    'contradicted by a subsequent event..'),
+        verbose_name=_('Disposition')
+    )
+    read_point = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('The read point at which the event took place.'),
+        verbose_name=_('Read Point')
+    )
+    biz_location = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('The business location where the objects '
+                    'associated with the EPCs may be found, '
+                    'until contradicted '
+                    'by a subsequent event.'),
+        verbose_name=_('Business Location')
+    )
+
+    class Meta:
+        abstract = True
+
+
+# class EPCISEvent(EPCISBusinessEvent):
+#     '''
+#     Represents the base class for all EPCIS Event classes.
+#     '''
+#     __abstract__ = True
+#
+#     pk = Column(BigInteger, primary_key=True, autoincrement=True)
+#     event_time = Column(DateTime)
+#     event_timezone_offset = Column(String)
+#     record_time = Column(DateTime)
+#     event_id = Column(String)
+#     error_declaration = Column(String)
+#
+#
+# class Source(Base):
+#     '''
+#     Used by the various concrete event implementations to
+#     represent EPCIS Source instances
+#     '''
+#     __abstract__ = True
+#
+#     pk = Column(Integer, primary_key=True, autoincrement=True)
+#     type = Column(String)
+#     source = Column(String)
+#
+#
+# class Destination(Base):
+#     '''
+#     Used by the various concrete event implementations to
+#     represent EPCIS Destination instances
+#     '''
+#     __abstract__ = True
+#
+#     pk = Column(Integer, primary_key=True, autoincrement=True)
+#     type = Column(String)
+#     destination = Column(String)
+#
+#
+# class BusinessTransaction(Base):
+#     __abstract__ = True
+#
+#     pk = Column(Integer, primary_key=True, autoincrement=True)
+#     biz_transaction = Column(String)
+#     type = Column(String)
+#
+#
+# class QuantityElement(Base):
+#     __abstract__ = True
+#
+#     pk = Column(Integer, primary_key=True, autoincrement=True)
+#     epc_class = Column(String)
+#     quantity = Column(Float)
+#     uom = Column(String)
+#
+#
+# class ILMD(Base):
+#     __abstract__ = True
+#
+#     pk = Column(Integer, primary_key=True, autoincrement=True)
+#     name = Column(String, nullable=False)
+#     value = Column(String, nullable=False)

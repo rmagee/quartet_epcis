@@ -1,0 +1,267 @@
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright 2018 SerialLab LLC.  All rights reserved.
+
+from quartet_epcis.app_models.EPCIS import abstractmodels, choices
+from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+
+class Event(abstractmodels.EPCISBusinessEvent):
+    '''
+    An omnibus event structure intended to support the
+    EPCIS object, transaction, aggregation and transformation
+    events.
+    '''
+    type = models.CharField(
+        max_length=2,
+        null=False,
+        help_text=_('The type of event.'),
+        verbose_name=_('Event Type'),
+        choices=choices.EVENT_TYPE_CHOICES
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('Event')
+        verbose_name_plural = _('Events')
+
+
+class TransformationID(abstractmodels.EPCISBusinessEvent):
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text=_('The source event.'),
+        verbose_name=_('Event')
+    )
+    identifier = models.CharField(
+        max_length=150,
+        null=False,
+        help_text=_('The Transformation event ID.'),
+        verbose_name=_('TransformationID')
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('Transformation ID')
+        verbose_name_plural = _('Transformation IDs')
+
+
+class ErrorDeclaration(models.Model):
+    '''
+    EPCIS Event error declarations.
+    '''
+    declaration_time = models.DateTimeField(
+        help_text=_('The time at which the error was declared.'),
+        verbose_name=_('Declaration Time'),
+        default=timezone.now
+    )
+    reason = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('The reason for the error.'),
+        verbose_name=_('Reason')
+    )
+    corrective_event_ids = models.TextField(
+        help_text=_('A delimited list of EPCIS event ids.'),
+        verbose_name=_('Corrective Event IDs'),
+        null=False
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text=_('The source event.'),
+        verbose_name=_('Event')
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('Error Declaration')
+        verbose_name_plural = _('Error Declarations')
+
+
+class QuantityElement(models.Model):
+    '''
+    The EPCIS QuantityElement as outlined in section 7.3.3.3 of the protocol.
+    '''
+    epc_class = models.CharField(
+        max_length=200,
+        null=False,
+        help_text=_('The EPC class.'),
+        verbose_name=_('EPC Class')
+    )
+    quantity = models.FloatField(
+        help_text=_('The Quantity value.'),
+        verbose_name=_('Quantity')
+    )
+    uom = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('The unit of measure relative to the quantity.'),
+        verbose_name=_('Unit of Measure (UOM)')
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text=_('The source event.'),
+        verbose_name=_('Event')
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('Quantity Element')
+        verbose_name_plural = _('Quantity Elements')
+
+
+class BusinessTransaction(models.Model):
+    '''
+    The BusinessTransaction model as related to a specific event
+    model.
+    A BusinessTransaction identifies a particular business
+    transaction. An example of a business
+    transaction is a specific purchase order. Business Transaction
+    information may be included in EPCIS
+    events to record an event’s participation in particular
+    business transactions.
+    As defined in section 7.3.5.3 of the protocol.
+    '''
+    biz_transaction = models.CharField(
+        max_length=200,
+        null=False,
+        help_text=_('The business transaction.'),
+        verbose_name=_('Business Transaction')
+    )
+    type = models.CharField(
+        max_length=200,
+        null=True,
+        help_text=_('The type of business transaction.'),
+        verbose_name=_('Type')
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text=_('The source event.'),
+        verbose_name=_('Event')
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('Business Transaction')
+        verbose_name_plural = _('Business Transactions')
+
+
+class InstanceLotMasterData(models.Model):
+    '''
+    Instance Lot Master Data as related to a specific event or document
+    via the source model UUID.
+    '''
+    name = models.CharField(
+        max_length=150,
+        null=False,
+        help_text=_('The name of the ILMD entry.'),
+        verbose_name=_('Name')
+    )
+    value = models.CharField(
+        max_length=255,
+        null=False,
+        help_text=_('The value of the ILMD entry.'),
+        verbose_name=_('Value')
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text=_('The source event.'),
+        verbose_name=_('Event')
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('ILMD Entry')
+        verbose_name_plural = _('ILMD Entries')
+
+
+class Source(models.Model):
+    '''
+    A Source relative to a specific event model.
+
+    A Source or Destination is used to provide
+    additional business context when an EPCIS event is
+    part of a business transfer; that is, a process
+    in which there is a transfer of ownership,
+    responsibility, and/or custody of physical or digital objects.
+    '''
+    type = models.CharField(
+        max_length=150,
+        null=False,
+        help_text=_('The source type.'),
+        verbose_name=_('Type')
+    )
+    source = models.CharField(
+        max_length=150,
+        null=False,
+        help_text=_('The source identifier.'),
+        verbose_name=_('Source')
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text=_('The source event.'),
+        verbose_name=_('Event')
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('Source')
+        verbose_name_plural = _('Sources')
+
+
+class Destination(models.Model):
+    '''
+    A Source or Destination is used to provide
+    additional business context when an EPCIS event is
+    part of a business transfer; that is, a process
+    in which there is a transfer of ownership,
+    responsibility, and/or custody of physical or digital objects.
+    '''
+    type = models.CharField(
+        max_length=150,
+        null=False,
+        help_text=_('The source type.'),
+        verbose_name=_('Type')
+    )
+    destination = models.CharField(
+        max_length=150,
+        null=False,
+        help_text=_('The Destination identifier.'),
+        verbose_name=_('Destination')
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text=_('The source event.'),
+        verbose_name=_('Event')
+    )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+        verbose_name = _('Destination')
+        verbose_name_plural = _('Destinations')
