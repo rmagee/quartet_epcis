@@ -8,7 +8,7 @@ To use quartet_epcis in a project, add it to your `INSTALLED_APPS`:
 
     INSTALLED_APPS = (
         ...
-        'quartet_epcis.apps.quartet_epcisConfig',
+        'quartet_epcis.apps.quartet_epcis.Config',
         ...
     )
 
