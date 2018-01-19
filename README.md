@@ -1,4 +1,4 @@
-[![pipeline status](https://gitlab.com/serial-lab/quartet/badges/master/pipeline.svg)](https://gitlab.com/serial-lab/quartet/commits/master)
+[![pipeline status](https://gitlab.com/serial-lab/quartet_epcis/badges/master/pipeline.svg)](https://gitlab.com/serial-lab/quartet_epcis/commits/master)
 [![coverage report](https://gitlab.com/serial-lab/quartet/badges/master/coverage.svg)](https://gitlab.com/serial-lab/quartet/commits/master)
 
 # QU4RTET
