@@ -43,7 +43,7 @@ coverage: ## check code coverage quickly with the default Python
 	open htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	sphinx-apidoc -o docs/ quartet
+	sphinx-apidoc -o docs/ quartet_epcis
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 
