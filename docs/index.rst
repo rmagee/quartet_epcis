@@ -5,6 +5,9 @@
 
 QU4RTET - The Open Source Compliance Platform for Serialized Goods
 =================================================================
+The quartet_epcis python package is a Django application that
+contains the base database models necessary for the support of
+EPCIS 1.2 data persistence to an RDBMS.
 
 Contents:
 

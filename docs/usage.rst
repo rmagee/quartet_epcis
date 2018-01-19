@@ -2,7 +2,8 @@
 Usage
 =====
 
-To use quartet_epcis in a project, add it to your `INSTALLED_APPS`:
+To use quartet_epcis in a django project, add it to your `INSTALLED_APPS` in
+your settings.py file:
 
 .. code-block:: python
 
@@ -14,13 +15,9 @@ To use quartet_epcis in a project, add it to your `INSTALLED_APPS`:
 
 Add quartet_epcis's URL patterns:
 
-.. code-block:: python
+Then run migrations:
 
-    from quartet_epcis import urls as quartet_epcis_urls
+.. code-block::
 
+    python manage.py migrate
 
-    urlpatterns = [
-        ...
-        url(r'^', include(quartet_epcis_urls)),
-        ...
-    ]
