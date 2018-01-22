@@ -24,7 +24,7 @@ class Entry(abstractmodels.UUIDModel):
     Represents an entry in the general ledger of serialized items and/or
     logical numbers used for serialized goods processing.
     '''
-    id = models.CharField(
+    identifier = models.CharField(
         max_length=150,
         null=False,
         help_text=_('The primary unique id for the entry.'),

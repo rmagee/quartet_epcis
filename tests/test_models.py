@@ -7,21 +7,27 @@ test_quartet
 
 Tests for `quartet_epcis` app_models module.
 """
-
+import os
+import django
+django.setup()
 from django.test import TestCase
-from django.conf import settings
-from tests import test_settings
 
-settings.configure(default_settings=test_settings)
+from quartet_epcis.parsing.parser import QuartetParser
+
 
 
 class TestQuartet(TestCase):
-
     def setUp(self):
         pass
 
     def test_something(self):
-        pass
+        curpath = os.path.dirname(__file__)
+        parser = QuartetParser(
+            os.path.join(curpath, 'data/epcis.xml')
+        )
+        parser.parse()
+        print(parser.event_cache)
+        parser.clear_cache()
 
     def tearDown(self):
         pass

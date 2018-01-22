@@ -31,3 +31,9 @@ if django.VERSION >= (1, 10):
     MIDDLEWARE = ()
 else:
     MIDDLEWARE_CLASSES = ()
+
+import logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[logging.StreamHandler()]
+)

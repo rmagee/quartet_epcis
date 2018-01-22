@@ -1,2 +1,2 @@
-
+-e git@gitlab.com:serial-lab/EParseCIS.git#egg=eparsecis
 # Additional requirements go here

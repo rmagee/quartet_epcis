@@ -12,26 +12,3 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2018 SerialLab LLC.  All rights reserved.
-from enum import Enum
-
-ACTION_CHOICES = (
-    ('ADD', 'Add'),
-    ('OBSERVE', 'Observe'),
-    ('DELETE', 'Delete')
-)
-
-EVENT_TYPE_CHOICES = (
-    ('ag', 'Aggregation'),
-    ('ob', 'Object'),
-    ('tx', 'Transaction'),
-    ('tf', 'Transformation')
-)
-
-class EventTypeChoicesEnum(Enum):
-    '''
-    Helper used to avoid any errors when using the choices outside of models.
-    '''
-    AGGREGATION = 'ag'
-    OBJECT = 'ob'
-    TRANSACTION = 'tx'
-    TRANSFORMATION = 'tf'
