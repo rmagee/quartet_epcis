@@ -29,7 +29,8 @@ class Entry(abstractmodels.UUIDModel):
         null=False,
         help_text=_('The primary unique id for the entry.'),
         verbose_name=_('EPC URN'),
-        db_index=True
+        db_index=True,
+        unique=True
     )
     output = models.BooleanField(
         default=False,

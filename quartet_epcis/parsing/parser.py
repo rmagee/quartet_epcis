@@ -14,7 +14,7 @@
 # Copyright 2018 SerialLab LLC.  All rights reserved.
 import logging
 from typing import List
-from eparsecis.eparsecis import FastIterParser
+from eparsecis.eparsecis import EPCISParser
 from quartet_epcis.app_models.EPCIS import events, choices, entries
 from EPCPyYes.core.v1_2 import events as yes_events
 
@@ -25,7 +25,7 @@ source_list = List[yes_events.Source]
 destination_list = List[yes_events.Destination]
 
 
-class QuartetParser(FastIterParser):
+class QuartetParser(EPCISParser):
     def __init__(self, stream, event_cache_size: int = 1024,
                  entry_cache_size: int = 10240):
         '''
@@ -55,7 +55,6 @@ class QuartetParser(FastIterParser):
         self.event_cache_size = event_cache_size
         self.entry_cache_size = entry_cache_size
 
-
     def handle_transaction_event(
         self,
         epcis_event: yes_events.TransactionEvent
@@ -71,24 +70,27 @@ class QuartetParser(FastIterParser):
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.TRANSACTION.value
         self.handle_entries(db_event.id, epcis_event.epc_list)
-        self.handle_quantity_elements(
-            db_event.id,
-            epcis_event.quantity_list
-        )
         if epcis_event.parent_id:
-            entry = entries.Entry(
-                identifier = epcis_event.parent_id,
-            )
-            #self.entry_cache.append(entry)
-            self.entry_cache[entry.id] = entry
-            entryevent = entries.EntryEvent(entry_id=entry.id,
-                                            event_id=db_event.id,
-                                            is_parent=True)
-            self.entry_event_cache.append(entryevent)
+            self.handle_top_level_id(epcis_event.parent_id, db_event.id)
         self.handle_common_elements(db_event, epcis_event)
         self.event_cache.append(db_event)
         if len(self.event_cache) >= self.event_cache_size:
             self.clear_cache()
+
+    def handle_top_level_id(self, top_id, db_event_id):
+        '''
+        For both transaction and aggregation events.  Will store the parent
+        and or/top level id as an Entry in the entry cache.
+        '''
+        entry = entries.Entry(
+            identifier=top_id,
+        )
+        self.entry_cache[entry.identifier] = entry
+        entryevent = entries.EntryEvent(entry_id=entry.id,
+                                        event_id=db_event_id,
+                                        is_parent=True)
+        self.entry_event_cache.append(entryevent)
+        logger.debug('Cached Entry for top id %s', top_id)
 
     def handle_aggregation_event(
         self,
@@ -103,21 +105,29 @@ class QuartetParser(FastIterParser):
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
         self.handle_entries(db_event.id, epcis_event.child_epcs)
+        self.handle_common_elements(db_event, epcis_event)
+        self.handle_top_level_id(epcis_event.parent_id, db_event.id)
         self.event_cache.append(db_event)
-        top = entries.Entry(
-            identifier=epcis_event.parent_id
-        )
-        self.entry_cache[top.id] = top
-        entryevent = entries.EntryEvent(
-            entry_id=top.id,
-            event_id=db_event.id,
-            is_parent=True
-        )
-        self.entry_event_cache.append(entryevent)
-        logger.debug('Added top level item %s to the entry cache '
-                     'along with entryevent relationship.',
-                     epcis_event.parent_id)
-        self.entry_cache[top.id] = top
+
+    def handle_object_event(self, epcis_event: yes_events.ObjectEvent):
+        '''
+        Executed when an ObjectEvent xml structure has finished parsing.
+        The EParseCIS library will pass in an EPCPyYes ObjectEvent
+        class instance for use.
+
+        :param epcis_event: The EPCPyYes ObjectEvent.
+        '''
+        logger.debug('Handling an ObjectEvent...')
+        db_event = self.get_db_event(epcis_event)
+        db_event.type = choices.EventTypeChoicesEnum.OBJECT.value
+        self.handle_entries(db_event.id, epcis_event.epc_list)
+        self.handle_common_elements(db_event, epcis_event)
+        self.handle_ilmd(db_event.id, epcis_event.ilmd)
+        self.event_cache.append(db_event)
+
+
+
+
 
     def handle_common_elements(
         self,
@@ -143,6 +153,27 @@ class QuartetParser(FastIterParser):
             db_event.id,
             epcis_event.destination_list
         )
+        if isinstance(epcis_event, yes_events.TransactionEvent) or \
+            isinstance(epcis_event, yes_events.ObjectEvent):
+            self.handle_quantity_elements(
+                db_event.id,
+                epcis_event.quantity_list
+            )
+        elif isinstance(epcis_event, yes_events.AggregationEvent):
+            self.handle_quantity_elements(
+                db_event.id,
+                epcis_event.child_quantity_list
+            )
+        elif isinstance(epcis_event, yes_events.TransformationEvent):
+            self.handle_quantity_elements(
+                db_event.id,
+                epcis_event.input_quantity_list
+            )
+            self.handle_quantity_elements(
+                db_event.id,
+                epcis_event.output_quantity_list,
+                is_output=True
+            )
 
     def get_db_event(self, epcis_event):
         '''
@@ -183,7 +214,7 @@ class QuartetParser(FastIterParser):
         logging.debug('Processing epc list %s', epc_list)
         for epc in epc_list:
             entry = entries.Entry(identifier=epc, output=output)
-            self.entry_cache[entry.id] = entry
+            self.entry_cache[entry.identifier] = entry
             entryevent = entries.EntryEvent(entry_id=entry.id,
                                             event_id=db_event_id)
             self.entry_event_cache.append(entryevent)
@@ -216,7 +247,8 @@ class QuartetParser(FastIterParser):
     def handle_quantity_elements(
         self,
         db_event_id: str,
-        quantity_elements: list
+        quantity_elements: list,
+        is_output: bool = False,
     ):
         '''
         Creates a QuantityElement database model and caches it
@@ -229,7 +261,8 @@ class QuartetParser(FastIterParser):
                 event_id=db_event_id,
                 epc_class=quantity_element.epc_class,
                 quantity=quantity_element.quantity,
-                uom=quantity_element.uom
+                uom=quantity_element.uom,
+                is_output=is_output
             )
             logging.debug('Appending quantity element.')
             self.quantity_element_cache.append(qe)
@@ -347,7 +380,3 @@ class QuartetParser(FastIterParser):
         del self.ilmd_cache[:]
         del self.source_cache[:]
         del self.destination_cache[:]
-
-    def handle_object_event(self, epcis_event):
-        pass
-

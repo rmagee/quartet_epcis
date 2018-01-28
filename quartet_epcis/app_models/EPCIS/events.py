@@ -121,6 +121,12 @@ class QuantityElement(models.Model):
         help_text=_('The source event.'),
         verbose_name=_('Event')
     )
+    is_output = models.BooleanField(
+        default=False,
+        help_text=_('True if this quantity element was provided as '
+                    'the output as part of a transformation event.'),
+        verbose_name=_('Is Output')
+    )
 
     class Meta:
         app_label = 'quartet_epcis'
