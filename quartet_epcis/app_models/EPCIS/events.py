@@ -197,7 +197,7 @@ class InstanceLotMasterData(models.Model):
         verbose_name_plural = _('ILMD Entries')
 
 
-class Source(models.Model):
+class Source(abstractmodels.UUIDModel):
     '''
     A Source relative to a specific event model.
 
@@ -219,13 +219,7 @@ class Source(models.Model):
         help_text=_('The source identifier.'),
         verbose_name=_('Source')
     )
-    event = models.ForeignKey(
-        Event,
-        on_delete=models.CASCADE,
-        null=False,
-        help_text=_('The source event.'),
-        verbose_name=_('Event')
-    )
+    events = models.ManyToManyField(Event)
 
     class Meta:
         app_label = 'quartet_epcis'
@@ -233,7 +227,7 @@ class Source(models.Model):
         verbose_name_plural = _('Sources')
 
 
-class Destination(models.Model):
+class Destination(abstractmodels.UUIDModel):
     '''
     A Source or Destination is used to provide
     additional business context when an EPCIS event is
@@ -253,13 +247,7 @@ class Destination(models.Model):
         help_text=_('The Destination identifier.'),
         verbose_name=_('Destination')
     )
-    event = models.ForeignKey(
-        Event,
-        on_delete=models.CASCADE,
-        null=False,
-        help_text=_('The source event.'),
-        verbose_name=_('Event')
-    )
+    events = models.ManyToManyField(Event)
 
     class Meta:
         app_label = 'quartet_epcis'

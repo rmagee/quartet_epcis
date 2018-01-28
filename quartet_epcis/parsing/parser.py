@@ -13,12 +13,16 @@
 #
 # Copyright 2018 SerialLab LLC.  All rights reserved.
 import logging
-
+from typing import List
 from eparsecis.eparsecis import FastIterParser
 from quartet_epcis.app_models.EPCIS import events, choices, entries
 from EPCPyYes.core.v1_2 import events as yes_events
 
 logger = logging.getLogger('quartet_epcis')
+biz_xact_list = List[yes_events.BusinessTransaction]
+ilmd_list = List[yes_events.InstanceLotMasterDataAttribute]
+source_list = List[yes_events.Source]
+destination_list = List[yes_events.Destination]
 
 
 class QuartetParser(FastIterParser):
@@ -40,12 +44,17 @@ class QuartetParser(FastIterParser):
         '''
         super().__init__(stream)
         self.event_cache = []
-        self.entry_cache = []
-        self.quatity_element_cache = []
+        self.entry_cache = {}
+        self.quantity_element_cache = []
         self.error_declaration_cache = []
         self.business_transaction_cache = []
+        self.ilmd_cache = []
+        self.source_cache = []
+        self.destination_cache = []
+        self.entry_event_cache = []
         self.event_cache_size = event_cache_size
         self.entry_cache_size = entry_cache_size
+
 
     def handle_transaction_event(
         self,
@@ -66,13 +75,74 @@ class QuartetParser(FastIterParser):
             db_event.id,
             epcis_event.quantity_list
         )
+        if epcis_event.parent_id:
+            entry = entries.Entry(
+                identifier = epcis_event.parent_id,
+            )
+            #self.entry_cache.append(entry)
+            self.entry_cache[entry.id] = entry
+            entryevent = entries.EntryEvent(entry_id=entry.id,
+                                            event_id=db_event.id,
+                                            is_parent=True)
+            self.entry_event_cache.append(entryevent)
+        self.handle_common_elements(db_event, epcis_event)
+        self.event_cache.append(db_event)
+        if len(self.event_cache) >= self.event_cache_size:
+            self.clear_cache()
+
+    def handle_aggregation_event(
+        self,
+        epcis_event: yes_events.AggregationEvent
+    ):
+        '''
+        Executed when an AggregationEvent xml structure has finished parsing.
+
+        :param epcis_event: An EPCPyYes AggregationEvent instance.
+        '''
+        logger.debug('Handling ann aggregation event.')
+        db_event = self.get_db_event(epcis_event)
+        db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
+        self.handle_entries(db_event.id, epcis_event.child_epcs)
+        self.event_cache.append(db_event)
+        top = entries.Entry(
+            identifier=epcis_event.parent_id
+        )
+        self.entry_cache[top.id] = top
+        entryevent = entries.EntryEvent(
+            entry_id=top.id,
+            event_id=db_event.id,
+            is_parent=True
+        )
+        self.entry_event_cache.append(entryevent)
+        logger.debug('Added top level item %s to the entry cache '
+                     'along with entryevent relationship.',
+                     epcis_event.parent_id)
+        self.entry_cache[top.id] = top
+
+    def handle_common_elements(
+        self,
+        db_event: events.Event,
+        epcis_event: yes_events.EPCISBusinessEvent
+    ):
+        '''
+        Helper function to handle the common elements across the Object,
+        Transaction and Aggregation event models.
+        :param epcis_event: The Event django database model instance.
+        :param db_event: The EPCPyYes EPCISBusinessEvent instance being passed
+        to the parser.
+        '''
         self.handle_business_transactions(
             db_event.id,
             epcis_event.business_transaction_list
         )
-        self.event_cache.append(db_event)
-        if len(self.event_cache) >= self.event_cache_size:
-            self.clear_cache()
+        self.handle_source_list(
+            db_event.id,
+            epcis_event.source_list
+        )
+        self.handle_destination_list(
+            db_event.id,
+            epcis_event.destination_list
+        )
 
     def get_db_event(self, epcis_event):
         '''
@@ -103,8 +173,9 @@ class QuartetParser(FastIterParser):
         output: bool = False
     ):
         '''
-        Gets the EPCs from the event and caches them for strorage in the
-        back-end.
+        Gets the EPCs from the event and caches them for storage in the
+        back-end.  Then creates the EntryEvent intersection entity records
+        and appends them for storage as well.
         :param db_event_id: The unique id of the event
         :param epc_list: A list of epcs to be cached.
         :return:
@@ -112,8 +183,10 @@ class QuartetParser(FastIterParser):
         logging.debug('Processing epc list %s', epc_list)
         for epc in epc_list:
             entry = entries.Entry(identifier=epc, output=output)
-            entry.events.add(db_event_id)
-            self.entry_cache.append(entry)
+            self.entry_cache[entry.id] = entry
+            entryevent = entries.EntryEvent(entry_id=entry.id,
+                                            event_id=db_event_id)
+            self.entry_event_cache.append(entryevent)
             if len(self.entry_cache) >= self.entry_cache_size:
                 self.clear_cache()
 
@@ -158,10 +231,11 @@ class QuartetParser(FastIterParser):
                 quantity=quantity_element.quantity,
                 uom=quantity_element.uom
             )
-            self.quatity_element_cache.append(qe)
+            logging.debug('Appending quantity element.')
+            self.quantity_element_cache.append(qe)
 
     def handle_business_transactions(self, db_event_id: str,
-                                     business_transaction_list):
+                                     business_transaction_list: biz_xact_list):
         '''
         Takes each business transaction in the list and creates
         a BusinessTransaction database model instance and caches it
@@ -176,7 +250,56 @@ class QuartetParser(FastIterParser):
                 biz_transaction=transaction.biz_transaction,
                 type=transaction.type
             )
+            logging.debug('Appending biz transaction.')
             self.business_transaction_cache.append(bt)
+
+    def handle_ilmd(self, db_event_id: str,
+                    ilmd_data: ilmd_list):
+        '''
+        Takes the ILMD node and creates InstanceLotMasterData model
+        instances to be cached for bulk insert into the database.
+        :param db_event_id: The source event primary key value.
+        :param ilmd_data: The ilmd section of EPCPyYes event.
+        '''
+        for ilmd in ilmd_data:
+            ie = events.InstanceLotMasterData(
+                event_id=db_event_id,
+                name=ilmd.name,
+                value=ilmd.value,
+            )
+            self.ilmd_cache.append(ie)
+
+    def handle_source_list(self, db_event_id: str,
+                           sources: source_list):
+        '''
+        Creates a source database model instance and caches it
+        for storage during bulk insert.
+        :param db_event_id: The source event primary key.
+        :param sources: A list of EPCPyYes Source instances.
+        '''
+        for source in sources:
+            src = events.Source(
+                type=source.type,
+                source=source.source,
+            )
+            src.events.add(db_event_id)
+            self.source_cache.append(src)
+
+    def handle_destination_list(self, db_event_id: str,
+                                destinations: destination_list):
+        '''
+        Creates a destination database model instance and caches
+        it for storage during bulk insert.
+        :param db_event_id: The source event's primary key.
+        :param destinations: A list of EPCPyYes Destination instances.
+        '''
+        for destination in destinations:
+            dest = events.Destination(
+                type=destination.type,
+                destination=destination.destination
+            )
+            dest.events.add(db_event_id)
+            self.destination_cache.append(dest)
 
     def clear_cache(self):
         '''
@@ -186,11 +309,14 @@ class QuartetParser(FastIterParser):
                      'in the event and entry caches respectively',
                      len(self.event_cache), len(self.entry_cache))
         events.Event.objects.bulk_create(self.event_cache)
-        entries.Entry.objects.bulk_create(self.entry_cache)
+        entries.Entry.objects.bulk_create(self.entry_cache.values())
+        logger.debug('Clearing out %s number of EntryEvents.',
+                     len(self.entry_event_cache))
+        entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
         logger.debug('Clearing cache of %s number of quantity elements',
-                     len(self.quatity_element_cache))
+                     len(self.quantity_element_cache))
         events.QuantityElement.objects.bulk_create(
-            self.quatity_element_cache
+            self.quantity_element_cache
         )
         logger.debug('Clearing cache of %s number of error declarations',
                      len(self.error_declaration_cache))
@@ -200,16 +326,28 @@ class QuartetParser(FastIterParser):
         logger.debug('Clearing the biz transaction cache of %s transactions',
                      len(self.business_transaction_cache))
         events.BusinessTransaction.objects.bulk_create(
-            self.business_transaction_cache)
+            self.business_transaction_cache
+        )
+        logger.debug('Clearing the ILMD cache of %s objects',
+                     len(self.ilmd_cache))
+        events.InstanceLotMasterData.objects.bulk_create(self.ilmd_cache)
+        logger.debug('Clearing out the source cache of %s items',
+                     len(self.source_cache))
+        events.Source.objects.bulk_create(self.source_cache)
+        logger.debug('Clearing out the destination cache of %s items',
+                     len(self.destination_cache))
+        events.Destination.objects.bulk_create(self.destination_cache)
         logger.debug('Clearing out the cache lists.')
         del self.event_cache[:]
-        del self.entry_cache[:]
+        self.entry_cache.clear()
+        del self.entry_event_cache[:]
         del self.error_declaration_cache[:]
-        del self.quatity_element_cache[:]
+        del self.quantity_element_cache[:]
         del self.business_transaction_cache[:]
+        del self.ilmd_cache[:]
+        del self.source_cache[:]
+        del self.destination_cache[:]
 
     def handle_object_event(self, epcis_event):
         pass
 
-    def handle_aggregation_event(self, epcis_event):
-        pass

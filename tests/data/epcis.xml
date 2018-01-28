@@ -83,6 +83,13 @@
                     </bizTransaction>
                 </bizTransactionList>
                 <parentID>urn:epc:id:sgtin:305555.3555555.1</parentID>
+                <epcList>
+                    <epc>urn:epc:id:sgtin:305555.0555555.1</epc>
+         `           <epc>urn:epc:id:sgtin:305555.0555555.2</epc>
+                    <epc>urn:epc:id:sgtin:305555.0555555.3</epc>
+                    <epc>urn:epc:id:sgtin:305555.0555555.4</epc>
+                    <epc>urn:epc:id:sgtin:305555.0555555.5</epc>
+                </epcList>
                 <action>ADD</action>
                 <bizStep>urn:epcglobal:cbv:bizstep:shipping</bizStep>
                 <disposition>urn:epcglobal:cbv:disp:in_transit</disposition>
