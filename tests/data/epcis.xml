@@ -24,6 +24,11 @@
                 <bizLocation>
                     <id>urn:epc:id:sgln:305555.123456.0</id>
                 </bizLocation>
+                <bizTransactionList>
+                    <bizTransaction type="urn:epcglobal:cbv:btt:po">
+                        urn:epc:id:gdti:0614141.06012.1234
+                    </bizTransaction>
+                </bizTransactionList>
                 <extension>
                     <sourceList>
                         <source type="urn:epcglobal:cbv:sdt:possessing_party">
@@ -72,6 +77,44 @@
                 <bizLocation>
                     <id>urn:epc:id:sgln:305555.123456.0</id>
                 </bizLocation>
+                <bizTransactionList>
+                    <bizTransaction type="urn:epcglobal:cbv:btt:po">
+                        urn:epc:id:gdti:0614141.06012.1234
+                    </bizTransaction>
+                </bizTransactionList>
+                <extension>
+                    <childQuantityList>
+                        <quantityElement>
+                            <epcClass>urn:epc:idpat:sgtin:305555.0555555.*
+                            </epcClass>
+                            <quantity>5</quantity>
+                        </quantityElement>
+                        <quantityElement>
+                            <epcClass>urn:epc:idpat:sgtin:305555.0555555.*
+                            </epcClass>
+                            <quantity>14.5</quantity>
+                            <uom>LB</uom>
+                        </quantityElement>
+                    </childQuantityList>
+                    <sourceList>
+                        <source type="urn:epcglobal:cbv:sdt:possessing_party">
+                            urn:epc:id:sgln:305555.123456.0
+                        </source>
+                        <source type="urn:epcglobal:cbv:sdt:location">
+                            urn:epc:id:sgln:305555.123456.12
+                        </source>
+                    </sourceList>
+                    <destinationList>
+                        <destination
+                                type="urn:epcglobal:cbv:sdt:owning_party">
+                            urn:epc:id:sgln:309999.111111.0
+                        </destination>
+                        <destination
+                                type="urn:epcglobal:cbv:sdt:location">
+                            urn:epc:id:sgln:309999.111111.233
+                        </destination>
+                    </destinationList>
+                </extension>
             </AggregationEvent>
             <TransactionEvent>
                 <eventTime>2018-01-22T22:51:49.294565+00:00</eventTime>
@@ -85,7 +128,7 @@
                 <parentID>urn:epc:id:sgtin:305555.3555555.1</parentID>
                 <epcList>
                     <epc>urn:epc:id:sgtin:305555.0555555.1</epc>
-         `           <epc>urn:epc:id:sgtin:305555.0555555.2</epc>
+                    <epc>urn:epc:id:sgtin:305555.0555555.2</epc>
                     <epc>urn:epc:id:sgtin:305555.0555555.3</epc>
                     <epc>urn:epc:id:sgtin:305555.0555555.4</epc>
                     <epc>urn:epc:id:sgtin:305555.0555555.5</epc>
@@ -135,146 +178,74 @@
             </TransactionEvent>
             <extension>
                 <TransformationEvent>
-                    <eventTime>2018-01-22T22:51:49.294565+00:00</eventTime>
-                    <recordTime>2018-01-22T22:51:49.294565+00:00</recordTime>
+                    <eventTime>2018-01-29T18:50:20.847426+00:00</eventTime>
+                    <recordTime>2018-01-29T18:50:20.847426+00:00</recordTime>
                     <eventTimeZoneOffset>+00:00</eventTimeZoneOffset>
+                    <baseExtension>
+                        <eventID>9db05f77-e007-41a2-a6d9-140254b7ce5a</eventID>
+                        <errorDeclaration>
+                            <declarationTime>2018-01-29T18:50:20.163126
+                            </declarationTime>
+                            <reason>
+                                urn:epcglobal:cbv:er:incorrect_data
+                            </reason>
+                            <correctiveEventIDs>
+                                <correctiveEventID>
+                                    fd2c6646-e4f9-4ed8-a5e5-e98614d6ce84
+                                </correctiveEventID>
+                                <correctiveEventID>
+                                    4b9932b7-45f7-4983-8b62-95c2784a2fc8
+                                </correctiveEventID>
+                            </correctiveEventIDs>
+                        </errorDeclaration>
+                    </baseExtension>
                     <inputEPCList>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2000</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2001</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2002</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2003</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2004</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2005</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2006</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2007</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2008</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2009</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2010</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2011</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2012</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2013</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2014</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2015</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2016</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2017</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2018</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2019</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2020</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2021</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2022</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2023</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2024</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2025</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2026</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2027</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2028</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2029</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2030</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2031</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2032</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2033</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2034</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2035</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2036</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2037</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2038</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2039</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2040</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2041</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2042</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2043</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2044</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2045</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2046</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2047</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2048</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2049</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2050</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2051</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2052</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2053</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2054</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2055</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2056</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2057</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2058</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2059</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2060</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2061</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2062</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2063</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2064</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2065</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2066</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2067</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2068</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2069</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2070</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2071</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2072</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2073</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2074</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2075</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2076</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2077</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2078</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2079</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2080</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2081</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2082</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2083</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2084</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2085</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2086</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2087</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2088</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2089</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2090</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2091</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2092</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2093</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2094</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2095</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2096</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2097</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2098</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2099</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1000</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1001</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1002</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1003</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1004</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1005</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1006</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1007</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1008</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.1009</epc>
                     </inputEPCList>
                     <inputQuantityList>
                         <quantityElement>
-                            <epcClass>urn:epc:idpat:sgtin:305555.0555555.*
+                            <epcClass>urn:epc:idpat:sgtin:305555.0555551.*
                             </epcClass>
                             <quantity>100</quantity>
                             <uom>EA</uom>
                         </quantityElement>
                         <quantityElement>
-                            <epcClass>urn:epc:idpat:sgtin:305555.0555555.*
+                            <epcClass>urn:epc:idpat:sgtin:305555.0555551.*
                             </epcClass>
                             <quantity>94.3</quantity>
                             <uom>LB</uom>
                         </quantityElement>
                     </inputQuantityList>
                     <outputEPCList>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2100</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2101</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2102</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2103</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2104</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2105</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2106</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2107</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2108</epc>
-                        <epc>urn:epc:id:sgtin:305555.0555555.2109</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2000</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2001</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2002</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2003</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2004</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2005</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2006</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2007</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2008</epc>
+                        <epc>urn:epc:id:sgtin:305555.1555555.2009</epc>
                     </outputEPCList>
                     <outputQuantityList>
                         <quantityElement>
-                            <epcClass>urn:epc:idpat:sgtin:305555.0555555.*
+                            <epcClass>urn:epc:idpat:sgtin:305555.0555551.*
                             </epcClass>
                             <quantity>10</quantity>
                             <uom>EA</uom>
                         </quantityElement>
                         <quantityElement>
-                            <epcClass>urn:epc:idpat:sgtin:305555.0555555.*
+                            <epcClass>urn:epc:idpat:sgtin:305555.0555551.*
                             </epcClass>
                             <quantity>94.3</quantity>
                             <uom>LB</uom>
@@ -289,40 +260,36 @@
                         <id>urn:epc:id:sgln:305555.123456.0</id>
                     </bizLocation>
                     <bizTransactionList>
-                        <bizTransaction type="urn:epcglobal:cbv:btt:po">
-                            urn:epc:id:gdti:0614141.06012.1234
+                        <bizTransaction type="urn:epcglobal:cbv:btt:desadv">
+                            urn:epcglobal:cbv:bt:0555555555555.DE45_111
+                        </bizTransaction>
+                        <bizTransaction type="urn:epcglobal:cbv:btt:bol">
+                            urn:epcglobal:cbv:bt:0555555555555.00001
                         </bizTransaction>
                     </bizTransactionList>
+                    <sourceList>
+                        <source type="urn:epcglobal:cbv:sdt:possessing_party">
+                            urn:epc:id:sgln:305555.123456.0
+                        </source>
+                        <source type="urn:epcglobal:cbv:sdt:location">
+                            urn:epc:id:sgln:305555.123456.12
+                        </source>
+                    </sourceList>
+                    <destinationList>
+                        <destination
+                                type="urn:epcglobal:cbv:sdt:owning_party">
+                            urn:epc:id:sgln:0614141.00001.0
+                        </destination>
+                        <destination
+                                type="urn:epcglobal:cbv:sdt:location">
+                            urn:epc:id:sgln:0614141.00001.23
+                        </destination>
+                    </destinationList>
                     <ilmd>
                         <cbvmd:itemExpirationDate>2015-12-31
                         </cbvmd:itemExpirationDate>
                         <cbvmd:lotNumber>DL232</cbvmd:lotNumber>
                     </ilmd>
-                    <extension>
-                        <sourceList>
-                            <source type="urn:epcglobal:cbv:sdt:possessing_party">
-                                urn:epc:id:sgln:305555.123456.0
-                            </source>
-                            <source type="urn:epcglobal:cbv:sdt:location">
-                                urn:epc:id:sgln:305555.123456.12
-                            </source>
-                        </sourceList>
-                        <destinationList>
-                            <destination
-                                    type="urn:epcglobal:cbv:sdt:owning_party">
-                                urn:epc:id:sgln:309999.111111.0
-                            </destination>
-                            <destination
-                                    type="urn:epcglobal:cbv:sdt:location">
-                                urn:epc:id:sgln:309999.111111.233
-                            </destination>
-                        </destinationList>
-                        <ilmd>
-                            <cbvmd:itemExpirationDate>2015-12-31
-                            </cbvmd:itemExpirationDate>
-                            <cbvmd:lotNumber>DL232</cbvmd:lotNumber>
-                        </ilmd>
-                    </extension>
                 </TransformationEvent>
             </extension>
         </EventList>
