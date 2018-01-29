@@ -53,6 +53,9 @@ class TestQuartet(TestCase):
         self.assertEqual(children.count(), 5, 'There should be 5 children '
                                               'for the aggregation event.')
         logger.debug('Aggregation event item count checks out.')
+        event = events.Event.objects.get(id=entry_event.event_id)
+        self.assertEqual(event.action, 'ADD')
+
 
 
     def tearDown(self):

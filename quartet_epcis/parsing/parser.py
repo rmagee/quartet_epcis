@@ -125,9 +125,25 @@ class QuartetParser(EPCISParser):
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
         self.event_cache.append(db_event)
 
-
-
-
+    def handle_transformation_event(
+        self,
+        epcis_event: yes_events.TransformationEvent
+    ):
+        '''
+        Executed when a TransformationEvent xml element has completed parsing
+        into a valid EPCPyYes TransformationEvent
+        :param epcis_event: The EPCPyYes TransformationEvent
+        :return: None
+        '''
+        logger.debug('Handling a TransformationEvent...')
+        db_event = self.get_db_event(epcis_event)
+        db_event.type = choices.EventTypeChoicesEnum.TRANSFORMATION.value
+        self.handle_common_elements(db_event, epcis_event)
+        self.handle_entries(db_event.id, epcis_event.input_epc_list)
+        self.handle_entries(db_event.id, epcis_event.output_epc_list,
+                            output=True)
+        self.handle_ilmd(db_event.id, epcis_event.ilmd)
+        self.event_cache.append(db_event)
 
     def handle_common_elements(
         self,
@@ -182,7 +198,8 @@ class QuartetParser(EPCISParser):
         :return: A new Event model instance.
         '''
         db_event = events.Event()
-        db_event.action = epcis_event.action
+        if not isinstance(epcis_event, yes_events.TransformationEvent):
+            db_event.action = epcis_event.action
         db_event.biz_location = epcis_event.biz_location or None
         db_event.biz_step = epcis_event.biz_step or None
         db_event.disposition = epcis_event.disposition or None
