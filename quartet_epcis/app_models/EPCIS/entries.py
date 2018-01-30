@@ -24,14 +24,14 @@ class Entry(abstractmodels.UUIDModel):
     Represents an entry in the general ledger of serialized items and/or
     logical numbers used for serialized goods processing.
     '''
-    id = models.CharField(
+    identifier = models.CharField(
         max_length=150,
         null=False,
         help_text=_('The primary unique id for the entry.'),
         verbose_name=_('EPC URN'),
-        db_index=True
+        db_index=True,
+        unique=True
     )
-    events = models.ManyToManyField(events.Event)
     output = models.BooleanField(
         default=False,
         help_text=_('Whether or not this entry was the output of '
@@ -40,8 +40,37 @@ class Entry(abstractmodels.UUIDModel):
     )
 
     def __str__(self):
-        return self.epc
+        return self.identifier
 
     class Meta:
         verbose_name = _('Entry')
         verbose_name_plural = _('Entries')
+
+
+class EntryEvent(models.Model):
+    '''
+    An intersection entity for events and entries.
+    '''
+    event_id = models.UUIDField(
+        null=False,
+        help_text=_('The UUID of the event.'),
+        verbose_name=_('Event ID'),
+        db_index=True
+    )
+    entry_id = models.UUIDField(
+        null=False,
+        help_text=_('The Unique ID of the Entry'),
+        verbose_name=_('Entry ID'),
+        db_index=True
+    )
+    is_parent = models.BooleanField(
+        default=False,
+        help_text=_('Whether or not this entry was the parent of it\'s '
+                    'constituent event.'),
+        verbose_name=_('Is Event Parent')
+    )
+
+    class Meta:
+        verbose_name = _('Entry Event Record')
+        verbose_name_plural = _('Entry Event Records')
+        index_together = ["event_id", "entry_id"]
