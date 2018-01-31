@@ -2,5 +2,6 @@ django
 djangorestframework
 bumpversion==0.5.3
 wheel==0.30.0
--e git@gitlab.com:serial-lab/EParseCIS.git#egg=eparsecis
+-e git+git@gitlab.com:serial-lab/EParseCIS.git#egg=eparsecis
+-e git+git@gitlab.com:serial-lab/EPCPyYes.git#egg=epcpyyes
 

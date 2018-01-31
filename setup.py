@@ -47,12 +47,11 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 setup(
     name='quartet_epcis',
     version=version,
-    description="""QU4RTET - The Open Source Compliance Platform for
-    Serialized Goods""",
+    description="""Defines EPCIS models and XML parsing.""",
     long_description=readme + '\n\n' + history,
     author='SerialLab, LLC',
     author_email='slab@serial-lab.com',
-    url='https://github.com/serial-lab/quartet_epcis',
+    url='https://gitlab.com/serial-lab/quartet_epcis',
     packages=[
         'quartet_epcis',
     ],
