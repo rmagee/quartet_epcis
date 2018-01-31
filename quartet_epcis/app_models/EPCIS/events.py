@@ -39,7 +39,7 @@ class Event(abstractmodels.EPCISBusinessEvent):
         verbose_name_plural = _('Events')
 
 
-class TransformationID(abstractmodels.EPCISBusinessEvent):
+class TransformationID(abstractmodels.UUIDModel):
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,

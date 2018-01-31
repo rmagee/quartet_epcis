@@ -96,8 +96,11 @@ class EPCISEvent(UUIDModel):
         verbose_name=_('Event ID')
     )
 
+    class Meta:
+        abstract = True
 
-class EPCISBusinessEvent(UUIDModel):
+
+class EPCISBusinessEvent(EPCISEvent):
     '''
     Abstract base-class for super-classes with an Action,
     biz step, biz location, etc...basically

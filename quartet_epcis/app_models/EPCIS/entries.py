@@ -32,12 +32,6 @@ class Entry(abstractmodels.UUIDModel):
         db_index=True,
         unique=True
     )
-    output = models.BooleanField(
-        default=False,
-        help_text=_('Whether or not this entry was the output of '
-                    'a Transformation event.'),
-        verbose_name=_('Transformation Output')
-    )
 
     def __str__(self):
         return self.identifier
@@ -63,12 +57,27 @@ class EntryEvent(models.Model):
         verbose_name=_('Entry ID'),
         db_index=True
     )
+    identifier = models.CharField(
+        max_length=150,
+        null=False,
+        help_text=_('A redundant entry ID entry for fast event composition.'),
+        verbose_name=_('EPC URN'),
+    )
     is_parent = models.BooleanField(
         default=False,
         help_text=_('Whether or not this entry was the parent of it\'s '
                     'constituent event.'),
         verbose_name=_('Is Event Parent')
     )
+    output = models.BooleanField(
+        default=False,
+        help_text=_('Whether or not the entry was the output of '
+                    'a Transformation event.'),
+        verbose_name=_('Transformation Output')
+    )
+
+    def __str__(self):
+        return '{0}:{1}'.format(self.entry_id,event_id)
 
     class Meta:
         verbose_name = _('Entry Event Record')

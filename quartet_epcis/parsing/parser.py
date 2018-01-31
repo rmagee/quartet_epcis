@@ -82,12 +82,12 @@ class QuartetParser(EPCISParser):
         For both transaction and aggregation events.  Will store the parent
         and or/top level id as an Entry in the entry cache.
         '''
-        entry = entries.Entry(
-            identifier=top_id,
-        )
+        entry = self.entry_cache.get(top_id, entries.Entry(
+            identifier=top_id))
         self.entry_cache[entry.identifier] = entry
         entryevent = entries.EntryEvent(entry_id=entry.id,
                                         event_id=db_event_id,
+                                        identifier=top_id,
                                         is_parent=True)
         self.entry_event_cache.append(entryevent)
         logger.debug('Cached Entry for top id %s', top_id)
@@ -230,10 +230,12 @@ class QuartetParser(EPCISParser):
         '''
         logging.debug('Processing epc list %s', epc_list)
         for epc in epc_list:
-            entry = entries.Entry(identifier=epc, output=output)
+            entry = entries.Entry(identifier=epc)
             self.entry_cache[entry.identifier] = entry
             entryevent = entries.EntryEvent(entry_id=entry.id,
-                                            event_id=db_event_id)
+                                            event_id=db_event_id,
+                                            identifier=epc,
+                                            output=output)
             self.entry_event_cache.append(entryevent)
             if len(self.entry_cache) >= self.entry_cache_size:
                 self.clear_cache()
