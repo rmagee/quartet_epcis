@@ -17,8 +17,10 @@ cwd = os.getcwd()
 parent = os.path.dirname(cwd)
 quartet_epcis_path = os.path.join(cwd, '..')
 sys.path.append(parent)
+print(sys.path)
+sys.path.append(os.path.join(cwd, '../tests'))
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.test_settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'test_settings'
 
 from recommonmark.parser import CommonMarkParser
 import django

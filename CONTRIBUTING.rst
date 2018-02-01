@@ -13,7 +13,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://gitlab.com/serial-lab/quartet/issues.
+Report bugs at https://gitlab.com/serial-lab/quartet_epcis/issues.
 
 If you are reporting a bug, please include:
 
@@ -43,7 +43,7 @@ articles, and such.
 Submit Feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://gitlab.com/serial-lab/quartet/issues.
+The best way to send feedback is to file an issue at https://gitlab.com/serial-lab/quartet_epcis/issues.
 
 If you are proposing a feature:
 
@@ -55,7 +55,7 @@ If you are proposing a feature:
 Get Started!
 ------------
 
-Ready to contribute? Here's how to set up `quartet` for local development.
+Ready to contribute? Here's how to set up `quartet_epcis` for local development.
 
 1. Fork the `quartet_epcis` repo on GitLab.
 2. Clone your fork locally::
@@ -64,8 +64,8 @@ Ready to contribute? Here's how to set up `quartet` for local development.
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv quartet
-    $ cd quartet/
+    $ mkvirtualenv quartet_epcis
+    $ cd quartet_epcis/
     $ python setup.py develop
 
 4. Create a branch for local development::
@@ -77,7 +77,7 @@ Ready to contribute? Here's how to set up `quartet` for local development.
 5. When you're done making changes, check that your changes pass flake8 and the
    tests, including testing other Python versions with tox::
 
-        $ flake8 quartet tests
+        $ flake8 quartet_epcis tests
         $ python runtests.py
 
    To get flake8 just pip install into your virtualenv.

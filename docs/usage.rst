@@ -9,7 +9,7 @@ your settings.py file:
 
     INSTALLED_APPS = (
         ...
-        'quartet_epcis.apps.quartet_epcis.Config',
+        'quartet_epcis',
         ...
     )
 

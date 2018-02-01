@@ -3,16 +3,24 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-QU4RTET - The Open Source Compliance Platform for Serialized Goods
+QU4RTET EPCIS - EPCIS XML Parsing for the Quartet Platform
 =================================================================
 The quartet_epcis python package is a Django application that
 contains the base database models necessary for the support of
-EPCIS 1.2 data persistence to an RDBMS.
+EPCIS 1.2 data persistence to an RDBMS.  The `quartet_epcis.parsing` package
+contains an EPCIS XML parser that will take an input stream of XML data
+and save it to a configured database back-end.
 
-Contents:
+The `quartet_epcis.app_models` directory contains a set of Django ORM models
+that are used to define the database scheme and store EPCIS data in the
+database.
+
+Contents
+________
 
 .. toctree::
    :maxdepth: 2
+
 
    readme
    installation
