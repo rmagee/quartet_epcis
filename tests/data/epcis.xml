@@ -278,11 +278,11 @@
                     <destinationList>
                         <destination
                                 type="urn:epcglobal:cbv:sdt:owning_party">
-                            urn:epc:id:sgln:0614141.00001.0
+                            urn:epc:id:sgln:309999.111111.0
                         </destination>
                         <destination
                                 type="urn:epcglobal:cbv:sdt:location">
-                            urn:epc:id:sgln:0614141.00001.23
+                            urn:epc:id:sgln:309999.111111.233
                         </destination>
                     </destinationList>
                     <ilmd>

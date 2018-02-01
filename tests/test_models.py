@@ -37,6 +37,8 @@ class TestQuartet(TestCase):
         self.confirm_parents()
         self.confirm_agg_event()
         self.confirm_transaction_event()
+        self.confirm_object_event()
+        self.confirm_transformation_event()
 
     def confirm_parents(self):
         '''
@@ -48,6 +50,51 @@ class TestQuartet(TestCase):
                                          'two parent entryevents.')
         logger.debug('Parent count checks out.')
         self.confirm_two_parents()
+
+    def confirm_object_event(self):
+        item = entries.Entry.objects.get(
+            identifier='urn:epc:id:sgtin:305555.0555555.1',
+        )
+        entry_events = entries.EntryEvent.objects.filter(
+            identifier=item.identifier
+        ).values_list('event_id')
+        event = events.Event.objects.filter(
+            id__in=entry_events,
+            type=choices.EventTypeChoicesEnum.OBJECT.value
+        )
+        self.assertEqual(event.count(), 1, "There should only be one "
+                                           "object event.")
+        # make sure there are 5 epcs for this event
+        event = event[0]
+        serials = entries.EntryEvent.objects.filter(
+            event_id=event.id
+        )
+        self.assertEqual(serials.count(), 5,
+                         'There should be five entry events'
+                         'for this event id.')
+        self.check_sglns(event)
+        self.get_biz_transactions(event)
+        self.get_source_destination(event)
+        self.assertEqual(event.action, Action.add.value)
+
+    def confirm_transformation_event(self):
+        entry_event = entries.EntryEvent.objects.prefetch_related().get(
+            identifier='urn:epc:id:sgtin:305555.1555555.2000')
+        event = entry_event.event
+
+        bizxact = events.BusinessTransaction.objects.filter(event_id=event.id)
+        self.assertEqual(bizxact.count(), 2, 'There should be 2 biz '
+                                             'transactions for this event.')
+        self.assertEqual(
+            bizxact[0].type,
+            business_transactions.BusinessTransactionType.Despatch_Advice.value,
+            'the business transaction type is not correct.')
+        self.assertEqual(bizxact[0].biz_transaction,
+                         'urn:epcglobal:cbv:bt:0555555555555.DE45_111')
+
+        self.check_sglns(event)
+        self.get_source_destination(event)
+        self.get_quantity_list2(event)
 
     def confirm_agg_event(self):
         parent = entries.Entry.objects.get(
@@ -86,10 +133,11 @@ class TestQuartet(TestCase):
         self.assertEqual(event.read_point, 'urn:epc:id:sgln:305555.123456.12')
         self.assertEqual(event.biz_location, 'urn:epc:id:sgln:305555.123456.0')
 
-    def get_biz_transactions(self, event):
+    def get_biz_transactions(self, event, count=1):
         bizxact = events.BusinessTransaction.objects.filter(event_id=event.id)
-        self.assertEqual(bizxact.count(), 1, 'There should only be one biz '
-                                             'transaction for this event.')
+        self.assertEqual(bizxact.count(), count,
+                         'There should only be one biz '
+                         'transaction for this event.')
         self.assertEqual(
             bizxact[0].type,
             business_transactions.BusinessTransactionType.Purchase_Order.value,
@@ -137,6 +185,43 @@ class TestQuartet(TestCase):
             uom='LB'
         )
         self.assertIsNotNone(qe2, 'Could not locate the LB quantity event.')
+
+    def get_quantity_list2(self, event):
+        qe1 = events.QuantityElement.objects.get(
+            event_id=event.id,
+            epc_class='urn:epc:idpat:sgtin:305555.0555551.*',
+            quantity=100,
+            uom='EA',
+            is_output=False
+        )
+        self.assertIsNotNone(qe1, 'Could not locate one of'
+                                  'the quantity elements.')
+        qe2 = events.QuantityElement.objects.get(
+            event_id=event.id,
+            epc_class='urn:epc:idpat:sgtin:305555.0555551.*',
+            quantity=94.3,
+            uom='LB',
+            is_output=False
+        )
+        self.assertIsNotNone(qe2, 'Could not locate the LB quantity event.')
+        qe1 = events.QuantityElement.objects.get(
+            event_id=event.id,
+            epc_class='urn:epc:idpat:sgtin:305555.0555551.*',
+            quantity=10,
+            uom='EA',
+            is_output=True
+        )
+        self.assertIsNotNone(qe1, 'Could not locate one of'
+                                  'the quantity elements.')
+        qe2 = events.QuantityElement.objects.get(
+            event_id=event.id,
+            epc_class='urn:epc:idpat:sgtin:305555.0555551.*',
+            quantity=94.3,
+            uom='LB',
+            is_output=True
+        )
+        self.assertIsNotNone(qe2, 'Could not locate the LB quantity event.')
+
 
     def get_source_destination(self, event):
         sources = event.source_set.all()

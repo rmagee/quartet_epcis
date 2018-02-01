@@ -45,17 +45,21 @@ class EntryEvent(models.Model):
     '''
     An intersection entity for events and entries.
     '''
-    event_id = models.UUIDField(
+    event = models.ForeignKey(
+        'quartet_epcis.Event',
         null=False,
         help_text=_('The UUID of the event.'),
         verbose_name=_('Event ID'),
-        db_index=True
+        db_index=True,
+        on_delete=models.CASCADE
     )
-    entry_id = models.UUIDField(
+    entry = models.ForeignKey(
+        'quartet_epcis.Entry',
         null=False,
         help_text=_('The Unique ID of the Entry'),
         verbose_name=_('Entry ID'),
-        db_index=True
+        db_index=True,
+        on_delete=models.CASCADE
     )
     identifier = models.CharField(
         max_length=150,
@@ -82,4 +86,4 @@ class EntryEvent(models.Model):
     class Meta:
         verbose_name = _('Entry Event Record')
         verbose_name_plural = _('Entry Event Records')
-        index_together = ["event_id", "entry_id"]
+        index_together = ["event", "entry"]
