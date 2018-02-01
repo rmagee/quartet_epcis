@@ -26,8 +26,7 @@ destination_list = List[yes_events.Destination]
 
 
 class QuartetParser(EPCISParser):
-    def __init__(self, stream, event_cache_size: int = 1024,
-                 entry_cache_size: int = 10240):
+    def __init__(self, stream, event_cache_size: int = 1024):
         '''
         Initializes a new QuartetParser.  Item entries and events will
         be cached in memory until either the event_cache_size or
@@ -39,8 +38,6 @@ class QuartetParser(EPCISParser):
         :param stream: The EPCIS stream to parse.
         :param event_cache_size: defaults to 1024.  The number of events
         to cache in memory before pushing to the back-end datastore.
-        :param entry_cache_size: The number of entries to cache before a
-        push to the datastore occurs.
         '''
         super().__init__(stream)
         self.event_cache = []
@@ -53,7 +50,6 @@ class QuartetParser(EPCISParser):
         self.destination_cache = []
         self.entry_event_cache = []
         self.event_cache_size = event_cache_size
-        self.entry_cache_size = entry_cache_size
 
     def handle_transaction_event(
         self,
@@ -237,8 +233,7 @@ class QuartetParser(EPCISParser):
                                             identifier=epc,
                                             output=output)
             self.entry_event_cache.append(entryevent)
-            if len(self.entry_cache) >= self.entry_cache_size:
-                self.clear_cache()
+
 
     def handle_error_declaration(
         self,
