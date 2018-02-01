@@ -1,5 +1,7 @@
 [run]
 branch = true
+source =
+    quartet_epcis
 
 [report]
 omit =
@@ -10,3 +12,4 @@ omit =
 show_missing = True
 exclude_lines =
     raise NotImplementedError
+
