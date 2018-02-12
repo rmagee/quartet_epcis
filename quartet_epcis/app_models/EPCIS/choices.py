@@ -12,6 +12,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2018 SerialLab LLC.  All rights reserved.
+"""
+
+A series of Django two-tuple choices for models and also contains
+an EventType enum for EPCIS event types to ensure that the code and the
+choices always match up accurately.
+
+"""
+
+
 from enum import Enum
 
 ACTION_CHOICES = (

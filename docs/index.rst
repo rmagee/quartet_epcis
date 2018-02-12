@@ -15,18 +15,33 @@ The `quartet_epcis.app_models` directory contains a set of Django ORM models
 that are used to define the database scheme and store EPCIS data in the
 database.
 
+What This Package Does
+__________
+
+* Defines the database schema for EPCIS 1.2 data.
+* Will parse an EPCIS 1.2 compliant XML document and load that data into
+  the configured backend database of your django application.
+
+What This Package Doesn't Do
+__________
+The sole purpose of this package is to define the backend schema and a
+mechanism to parse EPCIS data into that schema/backend.  Handing the actual
+work and defining any type of external APIs are left to other Quartet packages
+that rely on this one.  For an example of how to load EPCIS XML into a
+database, see the *Usage" page in this documentation.
+
+* Define an API for loading XML
+* Define an API for querying EPCIS data
+
 Contents
 ________
 
 .. toctree::
    :maxdepth: 2
 
-
-   readme
    installation
    usage
    contributing
    authors
    history
    quartet_epcis
-   modules

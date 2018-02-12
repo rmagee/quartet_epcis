@@ -4,11 +4,7 @@ import os
 import re
 import sys
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
-
+from setuptools import setup, find_packages
 
 def get_version(*file_paths):
     """Retrieves the version from quartet_epcis/__init__.py"""
@@ -52,14 +48,16 @@ setup(
     author='SerialLab, LLC',
     author_email='slab@serial-lab.com',
     url='https://gitlab.com/serial-lab/quartet_epcis',
-    packages=[
-        'quartet_epcis',
-    ],
+    packages=find_packages(exclude=['tests*']),
     include_package_data=True,
-    install_requires=[],
+    python_requires='~=3.5',
+    install_requires=[
+        'eparsecis',
+        'EPCPyYes'
+    ],
     license="GPLv3",
     zip_safe=False,
-    keywords='seriallab quartet_epcis',
+    keywords='seriallab quartet_epcis epcis level-4 quartet',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Framework :: Django',
@@ -68,5 +66,6 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
 )

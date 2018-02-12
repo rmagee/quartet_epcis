@@ -4,19 +4,10 @@ quartet_epcis package
 Submodules
 ----------
 
-
-quartet_epcis\.models module
-----------------------
-
-.. automodule:: quartet_epcis.models
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-quartet_epcis\.urls module
+quartet_epcis.parsing.parser module
 --------------------
 
-.. automodule:: quartet_epcis.urls
+.. automodule:: quartet_epcis.parsing.parser
     :members:
     :undoc-members:
     :show-inheritance:

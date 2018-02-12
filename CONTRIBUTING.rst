@@ -64,7 +64,7 @@ Ready to contribute? Here's how to set up `quartet_epcis` for local development.
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv quartet_epcis
+    $ mkvirtualenv quartet_epcis -p python3
     $ cd quartet_epcis/
     $ python setup.py develop
 
