@@ -8,39 +8,34 @@ serialized goods.
 
 ## Documentation
 
+Find the latest docs here:
 
-The full documentation is under the docs directory in this project.
+[https://serial-lab.gitlab.io/quartet_epcis/](https://serial-lab.gitlab.io/quartet_epcis/)
+
+
+The full (pre-built )documentation is under the docs directory in this project.
 
 ## Quickstart
 
 
 Install Quartet::
 
-    pip install quartet
+    pip install quartet_epcis
 
 Add it to your `INSTALLED_APPS`:
 
 
     INSTALLED_APPS = (
         ...
-        'quartet.apps.QuartetConfig',
+        'quartet_epcis',
         ...
     )
 
-Add Quartet's URL patterns:
-
-    from quartet import urls as quartet_urls
-
-
-    urlpatterns = [
-        ...
-        url(r'^', include(quartet_urls)),
-        ...
-    ]
 
 ## Features
 
-* TODO
+* Maintains the database schema for EPCIS 1.2 support.
+* Parses EPCIS 1.2 XML streams to the configured backend.
 
 ## Running The Unit Tests
 
