@@ -1,10 +1,17 @@
 [![pipeline status](https://gitlab.com/serial-lab/quartet_epcis/badges/master/pipeline.svg)](https://gitlab.com/serial-lab/quartet_epcis/commits/master)
 [![coverage report](https://gitlab.com/serial-lab/quartet_epcis/badges/master/coverage.svg)](https://gitlab.com/serial-lab/quartet/commits/master)
 
-# QU4RTET
+# QU4RTET EPCIS
 
-Quartet: The Open Source Level-4 System for the Tracking and Tracing of
-serialized goods.
+The quartet_epcis python package is a Django application that 
+contains the base database models necessary for the support of 
+EPCIS 1.2 data persistence to an RDBMS. The quartet_epcis.parsing 
+package contains an EPCIS XML parser that will take an input stream 
+of XML data and save it to a configured database back-end.
+
+The quartet_epcis.app_models directory contains a set of 
+Django ORM models that are used to define the database scheme 
+and store EPCIS data in the database.
 
 ## Documentation
 
