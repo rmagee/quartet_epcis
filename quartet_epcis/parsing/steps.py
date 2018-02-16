@@ -12,3 +12,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
+import io
+from quartet_capture.rules import Step
+from quartet_epcis.parsing.parser import QuartetParser
+
+
+class EPCISParsingStep(Step):
+    '''
+    Calls the EPCIS parser as a rules.Step that can be used in the
+    quartet_capture rule engine.
+    '''
+    def declared_parameters(self):
+        return {}
+
+    def execute(self, data, rule_context: dict):
+        parser = QuartetParser(io.BytesIO(data))
+        parser.parse()

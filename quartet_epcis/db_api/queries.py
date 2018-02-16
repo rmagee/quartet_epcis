@@ -11,7 +11,7 @@
 # # You should have received a copy of the GNU General Public License
 # # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # #
-# # Copyright 2018 SerialLab LLC.  All rights reserved.
+# # Copyright 2018 SerialLab Corp.  All rights reserved.
 #
 # from quartet_epcis.app_models.EPCIS import events, entries, choices
 # from EPCPyYes.core.v1_2 import template_events as yes_events
@@ -29,3 +29,4 @@
 #     agg_event = yes_events.AggregationEvent
 #     agg_event.event_id = db_event.event_id
 #
+# TODO: build out a nice query interface

@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright 2018 SerialLab LLC.  All rights reserved.
+# Copyright 2018 SerialLab Corp.  All rights reserved.
 
 from quartet_epcis.app_models.EPCIS import abstractmodels, choices
 from django.db import models
