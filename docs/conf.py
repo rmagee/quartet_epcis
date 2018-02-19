@@ -24,6 +24,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'test_settings'
 
 from recommonmark.parser import CommonMarkParser
 import django
+django.setup()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -31,7 +32,7 @@ import django
 #sys.path.insert(0, os.path.abspath('.'))
 
 import quartet_epcis
-import quartet_epcis.models.EPCIS
+import quartet_epcis.models
 import sphinx_rtd_theme
 
 # -- General configuration -----------------------------------------------------
@@ -61,7 +62,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Quartet EPCIS'
-copyright = u'2018, SerialLab'
+copyright = u'2018, SerialLab Corp'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

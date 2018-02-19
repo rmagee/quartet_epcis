@@ -16,14 +16,14 @@ that are used to define the database scheme and store EPCIS data in the
 database.
 
 What This Package Does
-__________
+______________________
 
 * Defines the database schema for EPCIS 1.2 data.
 * Will parse an EPCIS 1.2 compliant XML document and load that data into
   the configured backend database of your django application.
 
 What This Package Doesn't Do
-__________
+____________________________
 The sole purpose of this package is to define the backend schema and a
 mechanism to parse EPCIS data into that schema/backend.  Handing the actual
 work and defining any type of external APIs are left to other Quartet packages
@@ -44,4 +44,4 @@ ________
    contributing
    authors
    history
-   quartet_epcis
+   modules

@@ -23,7 +23,7 @@ Then run migrations:
 
 
 Using the QuartetParser
-===========
+=======================
 
 The QuartetParser (see example below), provides most of the functionality
 for this python package outside of the database models.  The QuartetParser
