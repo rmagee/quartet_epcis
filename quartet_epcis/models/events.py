@@ -13,7 +13,7 @@
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
-from quartet_epcis.app_models.EPCIS import abstractmodels, choices
+from quartet_epcis.models import abstractmodels, choices
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _

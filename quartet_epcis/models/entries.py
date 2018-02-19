@@ -16,7 +16,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from quartet_epcis.app_models.EPCIS import events, abstractmodels
+from quartet_epcis.models import abstractmodels
 
 
 class Entry(abstractmodels.UUIDModel):
@@ -39,7 +39,7 @@ class Entry(abstractmodels.UUIDModel):
     class Meta:
         verbose_name = _('Entry')
         verbose_name_plural = _('Entries')
-
+        app_label = 'quartet_epcis'
 
 class EntryEvent(models.Model):
     '''
@@ -87,3 +87,4 @@ class EntryEvent(models.Model):
         verbose_name = _('Entry Event Record')
         verbose_name_plural = _('Entry Event Records')
         index_together = ["event", "entry"]
+        app_label = 'quartet_epcis'

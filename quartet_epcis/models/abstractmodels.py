@@ -17,7 +17,7 @@ import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from quartet_epcis.app_models.EPCIS import choices
+from quartet_epcis.models import choices
 
 
 class UUIDModel(models.Model):

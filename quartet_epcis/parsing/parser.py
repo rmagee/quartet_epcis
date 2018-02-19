@@ -15,7 +15,7 @@
 import logging
 from typing import List
 from eparsecis.eparsecis import EPCISParser
-from quartet_epcis.app_models.EPCIS import events, choices, entries
+from quartet_epcis.models import events, entries, choices
 from EPCPyYes.core.v1_2 import events as yes_events
 
 logger = logging.getLogger('quartet_epcis')

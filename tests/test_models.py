@@ -5,7 +5,7 @@
 test_quartet
 ------------
 
-Tests for `quartet_epcis` app_models module.
+Tests for `quartet_epcis` models module.
 """
 import os
 import django
@@ -17,7 +17,7 @@ from EPCPyYes.core.v1_2.CBV import business_steps, business_transactions, \
     dispositions
 from EPCPyYes.core.v1_2.events import Action
 from quartet_epcis.parsing.parser import QuartetParser
-from quartet_epcis.app_models.EPCIS import entries, events, choices
+from quartet_epcis.models import events, entries, choices
 
 logger = logging.getLogger(__name__)
 

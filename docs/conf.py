@@ -31,7 +31,7 @@ import django
 #sys.path.insert(0, os.path.abspath('.'))
 
 import quartet_epcis
-import quartet_epcis.app_models.EPCIS
+import quartet_epcis.models.EPCIS
 import sphinx_rtd_theme
 
 # -- General configuration -----------------------------------------------------

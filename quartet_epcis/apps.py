@@ -2,6 +2,6 @@
 from django.apps import AppConfig
 
 
-class QuartetAppConfig(AppConfig):
+class QuartetEPCISConfig(AppConfig):
     name = 'quartet_epcis'
-    verbose_name = 'Quartet'
+    verbose_name = 'Quartet EPCIS'

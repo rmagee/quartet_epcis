@@ -13,7 +13,7 @@
 # #
 # # Copyright 2018 SerialLab Corp.  All rights reserved.
 #
-# from quartet_epcis.app_models.EPCIS import events, entries, choices
+# from quartet_epcis.models.EPCIS import events, entries, choices
 # from EPCPyYes.core.v1_2 import template_events as yes_events
 #
 # def get_aggregation_event_by_id(

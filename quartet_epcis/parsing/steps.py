@@ -26,5 +26,8 @@ class EPCISParsingStep(Step):
         return {}
 
     def execute(self, data, rule_context: dict):
-        parser = QuartetParser(io.BytesIO(data))
+        try:
+            parser = QuartetParser(io.BytesIO(data))
+        except TypeError:
+            parser = QuartetParser(io.BytesIO(data.encode()))
         parser.parse()
