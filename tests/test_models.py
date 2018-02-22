@@ -18,7 +18,7 @@ from EPCPyYes.core.v1_2.CBV import business_steps, business_transactions, \
 from EPCPyYes.core.v1_2.events import Action
 from quartet_epcis.parsing.parser import QuartetParser
 from quartet_epcis.models import events, entries, choices
-
+from quartet_epcis.db_api.queries import get_destinations, get_sources
 logger = logging.getLogger(__name__)
 
 
@@ -239,7 +239,7 @@ class TestQuartet(TestCase):
 
 
     def get_source_destination(self, event):
-        sources = event.source_set.all()
+        sources = get_sources(event)
         self.assertEqual(sources.count(), 2, 'There should only be two '
                                              'sources')
         source = sources.get(
@@ -256,7 +256,7 @@ class TestQuartet(TestCase):
         self.assertIsNotNone(source, 'the source '
                                      'urn:epc:id:sgln:305555.123456.12'
                                      'was not found.')
-        destinations = event.destination_set.all()
+        destinations = get_destinations(event)
         self.assertEqual(destinations.count(), 2, 'There should only be '
                                                   'two destinations.')
         destinations.get(
