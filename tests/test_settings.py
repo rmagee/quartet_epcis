@@ -9,21 +9,10 @@ USE_TZ = True
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "+-!+mriut6%tm@v^wi4(x6pz8hga+c*^0v+yvm5#lm+&5b$8on"
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": ":memory:",
-#     }
-# }
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'qu4rtettest',
-        'USER': 'qu4rtet',
-        'PASSWORD': 'onetwothreefour',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
     }
 }
 
