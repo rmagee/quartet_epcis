@@ -225,12 +225,32 @@ class Source(abstractmodels.UUIDModel):
         help_text=_('The source identifier.'),
         verbose_name=_('Source')
     )
-    events = models.ManyToManyField(Event)
 
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Source')
         verbose_name_plural = _('Sources')
+
+
+class SourceEvent(models.Model):
+    '''
+    An intersection entity for the source and event
+    many to many relationship.
+    '''
+    event = models.ForeignKey(
+        Event,
+        help_text=_('The event within which the source was reported.'),
+        verbose_name=_('Event'),
+        null=False,
+        on_delete=models.CASCADE
+    )
+    source = models.ForeignKey(
+        Source,
+        help_text=_('A source within the event.'),
+        verbose_name=_('Source'),
+        null=False,
+        on_delete = models.CASCADE
+    )
 
 
 class Destination(abstractmodels.UUIDModel):
@@ -253,9 +273,29 @@ class Destination(abstractmodels.UUIDModel):
         help_text=_('The Destination identifier.'),
         verbose_name=_('Destination')
     )
-    events = models.ManyToManyField(Event)
 
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Destination')
         verbose_name_plural = _('Destinations')
+
+
+class DestinationEvent(models.Model):
+    '''
+    An intersection entity for the destination and event
+    many to many relationship.
+    '''
+    event = models.ForeignKey(
+        Event,
+        help_text=_('The event within which the destination was reported.'),
+        verbose_name=_('Event'),
+        null=False,
+        on_delete=models.CASCADE
+    )
+    destination = models.ForeignKey(
+        Destination,
+        help_text=_('A destination within the event.'),
+        verbose_name=_('Destination'),
+        null=False,
+        on_delete=models.CASCADE
+    )

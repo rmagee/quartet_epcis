@@ -17,6 +17,7 @@ from typing import List
 from eparsecis.eparsecis import EPCISParser
 from quartet_epcis.models import events, entries, choices
 from EPCPyYes.core.v1_2 import events as yes_events
+from django.db import transaction
 
 logger = logging.getLogger('quartet_epcis')
 biz_xact_list = List[yes_events.BusinessTransaction]
@@ -50,6 +51,8 @@ class QuartetParser(EPCISParser):
         self.destination_cache = []
         self.entry_event_cache = []
         self.event_cache_size = event_cache_size
+        self.source_event_cache = []
+        self.destination_event_cache = []
 
     def handle_transaction_event(
         self,
@@ -78,9 +81,16 @@ class QuartetParser(EPCISParser):
         For both transaction and aggregation events.  Will store the parent
         and or/top level id as an Entry in the entry cache.
         '''
-        entry = self.entry_cache.get(top_id, entries.Entry(
-            identifier=top_id))
-        self.entry_cache[entry.identifier] = entry
+        # check the cache
+        entry = self.entry_cache.get(
+            top_id,
+            None,
+        )
+        # not in the cache then create and put in the cache
+        if not entry:
+            entry = entries.Entry.objects.get_or_create(identifier=top_id)[0]
+            self.entry_cache[entry.identifier] = entry
+
         entryevent = entries.EntryEvent(entry=entry,
                                         event=db_event,
                                         identifier=top_id,
@@ -226,14 +236,15 @@ class QuartetParser(EPCISParser):
         '''
         logging.debug('Processing epc list %s', epc_list)
         for epc in epc_list:
-            entry = entries.Entry(identifier=epc)
-            self.entry_cache[entry.identifier] = entry
+            entry = self.entry_cache.get(epc)
+            if not entry:
+                entry = entries.Entry.objects.get_or_create(identifier=epc)[0]
+                self.entry_cache[entry.identifier] = entry
             entryevent = entries.EntryEvent(entry=entry,
                                             event=db_event,
                                             identifier=epc,
                                             output=output)
             self.entry_event_cache.append(entryevent)
-
 
     def handle_error_declaration(
         self,
@@ -329,7 +340,12 @@ class QuartetParser(EPCISParser):
                 type=source.type,
                 source=source.source,
             )
-            src.events.add(db_event_id)
+            source_event = events.SourceEvent(source=src,
+                                              event_id=db_event_id)
+            logger.debug('Adding source %s %s and the source event '
+                         'to the cache',
+                         source.type, source.source)
+            self.source_event_cache.append(source_event)
             self.source_cache.append(src)
 
     def handle_destination_list(self, db_event_id: str,
@@ -345,52 +361,68 @@ class QuartetParser(EPCISParser):
                 type=destination.type,
                 destination=destination.destination
             )
-            dest.events.add(db_event_id)
+            destination_event = events.DestinationEvent(
+                destination=dest,
+                event_id=db_event_id
+            )
+            logger.debug('Adding destination %s %s and the destination event '
+                         'to the cache',
+                         destination.type, destination.destination)
+            self.destination_event_cache.append(destination_event)
             self.destination_cache.append(dest)
 
     def clear_cache(self):
         '''
         Calls save on all items in the cache
         '''
-        logger.debug('Clear cache has been called with %s and %i '
-                     'in the event and entry caches respectively',
-                     len(self.event_cache), len(self.entry_cache))
-        events.Event.objects.bulk_create(self.event_cache)
-        entries.Entry.objects.bulk_create(self.entry_cache.values())
-        logger.debug('Clearing out %s number of EntryEvents.',
-                     len(self.entry_event_cache))
-        entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
-        logger.debug('Clearing cache of %s number of quantity elements',
-                     len(self.quantity_element_cache))
-        events.QuantityElement.objects.bulk_create(
-            self.quantity_element_cache
-        )
-        logger.debug('Clearing cache of %s number of error declarations',
-                     len(self.error_declaration_cache))
-        events.ErrorDeclaration.objects.bulk_create(
-            self.error_declaration_cache
-        )
-        logger.debug('Clearing the biz transaction cache of %s transactions',
-                     len(self.business_transaction_cache))
-        events.BusinessTransaction.objects.bulk_create(
-            self.business_transaction_cache
-        )
-        logger.debug('Clearing the ILMD cache of %s objects',
-                     len(self.ilmd_cache))
-        events.InstanceLotMasterData.objects.bulk_create(self.ilmd_cache)
-        logger.debug('Clearing out the source cache of %s items',
-                     len(self.source_cache))
-        events.Source.objects.bulk_create(self.source_cache)
-        logger.debug('Clearing out the destination cache of %s items',
-                     len(self.destination_cache))
-        events.Destination.objects.bulk_create(self.destination_cache)
-        logger.debug('Clearing out the cache lists.')
-        del self.event_cache[:]
-        self.entry_cache.clear()
-        del self.entry_event_cache[:]
-        del self.error_declaration_cache[:]
-        del self.quantity_element_cache[:]
-        del self.business_transaction_cache[:]
-        del self.ilmd_cache[:]
-        del self.source_cache[:]
-        del self.destination_cache[:]
+        with transaction.atomic():
+            logger.debug('Clear cache has been called with %s and %i '
+                         'in the event and entry caches respectively',
+                         len(self.event_cache), len(self.entry_cache))
+            events.Event.objects.bulk_create(self.event_cache)
+            logger.debug('Clearing out %s number of EntryEvents.',
+                         len(self.entry_event_cache))
+            entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
+            logger.debug('Clearing cache of %s number of quantity elements',
+                         len(self.quantity_element_cache))
+            events.QuantityElement.objects.bulk_create(
+                self.quantity_element_cache
+            )
+            logger.debug('Clearing cache of %s number of error declarations',
+                         len(self.error_declaration_cache))
+            events.ErrorDeclaration.objects.bulk_create(
+                self.error_declaration_cache
+            )
+            logger.debug(
+                'Clearing the biz transaction cache of %s transactions',
+                len(self.business_transaction_cache))
+            events.BusinessTransaction.objects.bulk_create(
+                self.business_transaction_cache
+            )
+            logger.debug('Clearing the ILMD cache of %s objects',
+                         len(self.ilmd_cache))
+            events.InstanceLotMasterData.objects.bulk_create(self.ilmd_cache)
+            logger.debug('Clearing out the source cache of %s items',
+                         len(self.source_cache))
+            events.Source.objects.bulk_create(self.source_cache)
+            logger.debug('Clearing out the destination cache of %s items',
+                         len(self.destination_cache))
+            events.Destination.objects.bulk_create(self.destination_cache)
+            logger.debug('Clearing out the source event cache.')
+            events.SourceEvent.objects.bulk_create(self.source_event_cache)
+            logger.debug('Clearing out the destination event cache.')
+            events.DestinationEvent.objects.bulk_create(
+                self.destination_event_cache
+            )
+            logger.debug('Clearing out the cache lists.')
+            del self.event_cache[:]
+            self.entry_cache.clear()
+            del self.entry_event_cache[:]
+            del self.error_declaration_cache[:]
+            del self.quantity_element_cache[:]
+            del self.business_transaction_cache[:]
+            del self.ilmd_cache[:]
+            del self.source_cache[:]
+            del self.destination_cache[:]
+            del self.source_event_cache[:]
+            del self.destination_event_cache[:]

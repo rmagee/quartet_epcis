@@ -15,6 +15,7 @@
 import io
 from quartet_capture.rules import Step
 from quartet_epcis.parsing.parser import QuartetParser
+from django.core.files.base import File
 
 
 class EPCISParsingStep(Step):
@@ -27,7 +28,10 @@ class EPCISParsingStep(Step):
 
     def execute(self, data, rule_context: dict):
         try:
-            parser = QuartetParser(io.BytesIO(data))
+            if isinstance(data, File):
+                parser = QuartetParser(data)
+            else:
+                parser = QuartetParser(io.BytesIO(data))
         except TypeError:
             parser = QuartetParser(io.BytesIO(data.encode()))
         parser.parse()
