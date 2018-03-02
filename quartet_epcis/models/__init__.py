@@ -18,3 +18,4 @@ from .abstractmodels import UUIDModel, EPCISBusinessEvent, EPCISEvent, \
 from .entries import Entry, EntryEvent
 from .events import TransformationID, ErrorDeclaration, Destination, \
     BusinessTransaction, QuantityElement, Source, InstanceLotMasterData, Event
+from .headers import DocumentIdentification, Partner, SBDH

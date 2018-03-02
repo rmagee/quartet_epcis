@@ -17,6 +17,7 @@
 from rest_framework.routers import DefaultRouter
 from quartet_epcis import viewsets
 
+
 router = DefaultRouter()
 router.register(r'entries', viewsets.EntryViewSet, base_name='entries')
 router.register(r'entry-events', viewsets.EntryEventViewSet,

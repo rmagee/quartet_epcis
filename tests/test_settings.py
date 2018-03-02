@@ -32,8 +32,6 @@ if django.VERSION >= (1, 10):
 else:
     MIDDLEWARE_CLASSES = ()
 
-AUTOCOMMIT = False
-
 import logging
 logging.basicConfig(
     level=logging.DEBUG,

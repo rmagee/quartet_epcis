@@ -16,5 +16,7 @@
 
 from quartet_epcis.routers import router
 
+app_name = 'quartet_epcis'
+
 urlpatterns = []
 urlpatterns += router.urls

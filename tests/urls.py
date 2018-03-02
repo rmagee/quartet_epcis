@@ -5,6 +5,8 @@ from django.conf.urls import url, include
 
 from quartet_epcis.urls import urlpatterns as quartet_urls
 
+app_name = 'quartet_epcis'
+
 urlpatterns = [
-    url(r'^', include(quartet_urls, namespace='quartet_epcis')),
+    url(r'^', include(quartet_urls)),
 ]
