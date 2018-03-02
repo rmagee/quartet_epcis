@@ -53,7 +53,8 @@ setup(
     python_requires='~=3.5',
     install_requires=[
         'eparsecis',
-        'EPCPyYes'
+        'EPCPyYes',
+        'django-model-utils'
     ],
     license="GPLv3",
     zip_safe=False,

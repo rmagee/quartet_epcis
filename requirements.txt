@@ -1,3 +1,4 @@
 -e git+git@gitlab.com:serial-lab/EParseCIS.git#egg=eparsecis
 -e git+git@gitlab.com:serial-lab/EPCPyYes.git#egg=epcpyyes
 # Additional requirements go here
+django-model-utils

@@ -15,6 +15,9 @@
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from quartet_epcis.models import abstractmodels
+from model_utils import models as utils
+
 
 document_type_choices = (
     ('Events', 'Events'),
@@ -30,6 +33,17 @@ partner_choices = (
     ('Receiver', 'Receiver')
 )
 
+class Message(models.Model):
+    '''
+    An umbrella model to unify all headers and events that arrived
+    as part of a single message.  If the message had a unique id supplied in
+    the header, that will be used (albeit redunantly) along with a UUID4
+    for each message as the primary key.
+    '''
+    utils.AutoCreatedField(
+        help_text=_('The date and time this record was created.'),
+        verbose_name=_('Created Date')
+    )
 
 class SBDH(models.Model):
     '''
@@ -47,6 +61,12 @@ class SBDH(models.Model):
         'quartet_epcis.DocumentIdentification',
         null=False,
         on_delete=models.CASCADE
+    )
+    message = models.ForeignKey(
+        'quartet_epcis.Message',
+        on_delete=models.CASCADE,
+        help_text=_('The message this header was associated with.'),
+        verbose_name=_('Message')
     )
 
     class Meta:
@@ -159,7 +179,7 @@ class DocumentIdentification(models.Model):
     )
     instance_identifier = models.CharField(
         max_length=40,
-        null=True,
+        null=False,
         help_text=_('Descriptor which contains reference information '
                     'which uniquely identifies this instance of the SBD '
                     'between the sender and the receiver.'),

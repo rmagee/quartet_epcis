@@ -18,7 +18,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-
 class Event(abstractmodels.EPCISBusinessEvent):
     '''
     An omnibus event structure intended to support the
@@ -32,7 +31,11 @@ class Event(abstractmodels.EPCISBusinessEvent):
         verbose_name=_('Event Type'),
         choices=choices.EVENT_TYPE_CHOICES
     )
-
+    message_id = models.BigIntegerField(
+        null=False,
+        help_text=_('The unique id of the originating message.'),
+        verbose_name=_('Message ID')
+    )
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Event')

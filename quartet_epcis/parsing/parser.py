@@ -17,7 +17,7 @@ from typing import List
 from eparsecis.eparsecis import EPCISParser
 from quartet_epcis.models import events, entries, choices, headers
 from EPCPyYes.core.v1_2 import events as yes_events
-from EPCPyYes.core.SBDH import template_sbdh, sbdh
+from EPCPyYes.core.SBDH import template_sbdh
 from django.db import transaction
 
 logger = logging.getLogger('quartet_epcis')
@@ -54,6 +54,16 @@ class QuartetParser(EPCISParser):
         self.event_cache_size = event_cache_size
         self.source_event_cache = []
         self.destination_event_cache = []
+        self._message = None
+
+    def parse(self):
+        '''
+        Creates the message for use in associating events and then
+        executes the base-class parse function.
+        '''
+        self._message = headers.Message()
+        self._message.save()
+        super().parse()
 
     def handle_sbdh(self,
                     header: template_sbdh.StandardBusinessDocumentHeader):
@@ -89,6 +99,7 @@ class QuartetParser(EPCISParser):
                 db_partner.contact_type_identifier = \
                     partner.contact_type_identifier
             logger.debug('Adding partner to the sbdh model instance.')
+        db_header.message_id = self._message.id
         db_header.save()
 
     def handle_transaction_event(
@@ -252,6 +263,7 @@ class QuartetParser(EPCISParser):
                                          or None
         db_event.event_id = epcis_event.event_id or None
         db_event.record_time = epcis_event.record_time or None
+        db_event.message_id = self._message.id
         if epcis_event.error_declaration:
             self.handle_error_declaration(
                 db_event.id,
