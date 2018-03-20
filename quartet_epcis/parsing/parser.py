@@ -64,6 +64,7 @@ class QuartetParser(EPCISParser):
         self._message = headers.Message()
         self._message.save()
         super().parse()
+        self.clear_cache()
 
     def handle_sbdh(self,
                     header: template_sbdh.StandardBusinessDocumentHeader):

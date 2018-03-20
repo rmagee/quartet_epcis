@@ -45,7 +45,7 @@ setup(
     version=version,
     description="""Defines EPCIS models and XML parsing.""",
     long_description=readme + '\n\n' + history,
-    author='SerialLab, LLC',
+    author='SerialLab Corp',
     author_email='slab@serial-lab.com',
     url='https://gitlab.com/serial-lab/quartet_epcis',
     packages=find_packages(exclude=['tests*']),
