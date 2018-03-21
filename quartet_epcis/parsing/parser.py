@@ -372,7 +372,7 @@ class QuartetParser(EPCISParser):
         for ilmd in ilmd_data:
             ie = events.InstanceLotMasterData(
                 event_id=db_event_id,
-                name=ilmd.name,
+                name=ilmd.name.value,
                 value=ilmd.value,
             )
             self.ilmd_cache.append(ie)

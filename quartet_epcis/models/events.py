@@ -18,6 +18,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+
 class Event(abstractmodels.EPCISBusinessEvent):
     '''
     An omnibus event structure intended to support the
@@ -36,6 +37,7 @@ class Event(abstractmodels.EPCISBusinessEvent):
         help_text=_('The unique id of the originating message.'),
         verbose_name=_('Message ID')
     )
+
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Event')
@@ -169,6 +171,9 @@ class BusinessTransaction(models.Model):
         verbose_name=_('Event')
     )
 
+    def __str__(self):
+        return "%s" % self.type
+
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Business Transaction')
@@ -200,6 +205,9 @@ class InstanceLotMasterData(models.Model):
         verbose_name=_('Event')
     )
 
+    def __str__(self):
+        return "%s: %s" % (self.name, self.value)
+
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('ILMD Entry')
@@ -229,6 +237,9 @@ class Source(abstractmodels.UUIDModel):
         verbose_name=_('Source')
     )
 
+    def __str__(self):
+        return "%s: %s" % (self.type, self.source)
+
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Source')
@@ -252,7 +263,7 @@ class SourceEvent(models.Model):
         help_text=_('A source within the event.'),
         verbose_name=_('Source'),
         null=False,
-        on_delete = models.CASCADE
+        on_delete=models.CASCADE
     )
 
 
