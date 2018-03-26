@@ -6,6 +6,7 @@ flake8>=2.1.0
 tox>=1.7.0
 codecov>=2.0.0
 recommonmark
+django-model-utils
 -e git+git@gitlab.com:serial-lab/EParseCIS.git#egg=eparsecis
 -e git+git@gitlab.com:serial-lab/EPCPyYes.git#egg=epcpyyes
 
