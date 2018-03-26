@@ -83,7 +83,7 @@ class ErrorDeclaration(models.Model):
     corrective_event_ids = models.TextField(
         help_text=_('A delimited list of EPCIS event ids.'),
         verbose_name=_('Corrective Event IDs'),
-        null=False
+        null=True
     )
     event = models.ForeignKey(
         Event,
@@ -266,6 +266,9 @@ class SourceEvent(models.Model):
         on_delete=models.CASCADE
     )
 
+    class Meta:
+        app_label = 'quartet_epcis'
+
 
 class Destination(abstractmodels.UUIDModel):
     '''
@@ -313,3 +316,6 @@ class DestinationEvent(models.Model):
         null=False,
         on_delete=models.CASCADE
     )
+
+    class Meta:
+        app_label = 'quartet_epcis'

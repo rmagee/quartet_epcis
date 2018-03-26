@@ -33,7 +33,26 @@ else:
     MIDDLEWARE_CLASSES = ()
 
 import logging
+import logging.config
 logging.basicConfig(
     level=logging.DEBUG,
-    handlers=[logging.StreamHandler()]
+    handlers=[logging.StreamHandler()],
 )
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#     },
+# }
+# logging.config.dictConfig(LOGGING)

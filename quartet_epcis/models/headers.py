@@ -18,7 +18,6 @@ from django.utils.translation import gettext_lazy as _
 from quartet_epcis.models import abstractmodels
 from model_utils import models as utils
 
-
 document_type_choices = (
     ('Events', 'Events'),
     ('MasterData', 'MasterData'),
@@ -33,6 +32,7 @@ partner_choices = (
     ('Receiver', 'Receiver')
 )
 
+
 class Message(models.Model):
     '''
     An umbrella model to unify all headers and events that arrived
@@ -44,6 +44,10 @@ class Message(models.Model):
         help_text=_('The date and time this record was created.'),
         verbose_name=_('Created Date')
     )
+
+    class Meta:
+        app_label = 'quartet_epcis'
+
 
 class SBDH(models.Model):
     '''

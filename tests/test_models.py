@@ -85,13 +85,6 @@ class TestQuartet(TestCase):
         bizxact = events.BusinessTransaction.objects.filter(event_id=event.id)
         self.assertEqual(bizxact.count(), 2, 'There should be 2 biz '
                                              'transactions for this event.')
-        # self.assertEqual(
-        #     bizxact[0].type,
-        #     business_transactions.BusinessTransactionType.Despatch_Advice.value,
-        #     'the business transaction type is not correct.')
-        # self.assertEqual(bizxact[0].biz_transaction,
-        #                  'urn:epcglobal:cbv:bt:0555555555555.DE45_111')
-
         self.check_sglns(event)
         self.get_source_destination(event)
         self.get_quantity_list2(event)

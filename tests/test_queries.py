@@ -1,0 +1,82 @@
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright 2018 SerialLab Corp.  All rights reserved.
+import os
+from django.test import TestCase
+from quartet_epcis.models import events, choices
+from quartet_epcis.db_api import queries
+from quartet_epcis.parsing.parser import QuartetParser
+
+
+class QueriesTestCase(TestCase):
+
+    def test_get_events(self):
+        '''
+        Pulls an object event out of the database.
+        '''
+        self._parse_test_data()
+        qp = queries.EPCISDBProxy()
+        evs = qp.get_events_by_entry_identifer(
+            'urn:epc:id:sgtin:305555.0555555.1')
+        self.assertEqual(3, len(evs))
+
+    def test_get_object_event(self):
+        self._parse_test_data()
+        ae = events.Event.objects.filter(
+            type=choices.EventTypeChoicesEnum.OBJECT.value
+        )
+        qp = queries.EPCISDBProxy()
+        event = qp.get_epcis_event(ae[0])
+        self.assertEqual(len(event.business_transaction_list), 1)
+        self.assertEqual(len(event.source_list), 2)
+        self.assertEqual(len(event.destination_list), 2)
+        self.assertEqual(len(event.epc_list), 5)
+        self.assertEqual(len(event.ilmd), 2)
+        print(event.render())
+
+    def test_get_aggregation_event(self):
+        self._parse_test_data()
+        ae = events.Event.objects.filter(
+            type=choices.EventTypeChoicesEnum.AGGREGATION.value
+        )
+        qp = queries.EPCISDBProxy()
+        event = qp.get_epcis_event(ae[0])
+        self.assertEqual(len(event.source_list), 2)
+        self.assertEqual(len(event.destination_list), 2)
+        self.assertEqual(len(event.child_epcs), 5)
+        self.assertEqual(event.parent_id, 'urn:epc:id:sgtin:305555.3555555.1')
+        print(event.render())
+
+    def test_get_transaction_event(self):
+        self._parse_test_data()
+        te = events.Event.objects.filter(
+            type=choices.EventTypeChoicesEnum.TRANSACTION.value
+        )
+        qp = queries.EPCISDBProxy()
+        event = qp.get_epcis_event(te[0])
+        self.assertEqual(len(event.business_transaction_list), 1)
+        self.assertEqual(len(event.source_list), 2)
+        self.assertEqual(len(event.destination_list), 2)
+        self.assertEqual(len(event.epc_list), 5)
+        self.assertEqual(event.parent_id, 'urn:epc:id:sgtin:305555.3555555.1')
+        print(event.render())
+
+    def _parse_test_data(self):
+        curpath = os.path.dirname(__file__)
+        parser = QuartetParser(
+            os.path.join(curpath, 'data/epcis.xml')
+        )
+        parser.parse()
+        print(parser.event_cache)
+        parser.clear_cache()
