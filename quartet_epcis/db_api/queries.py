@@ -57,6 +57,18 @@ class EPCISDBProxy:
     the EPCIS schema / XML model by converting queries for data into
     EPCPyYes objects.
     '''
+    def get_events_by_epc(self, epc: str):
+        '''
+        Returns a list of EPCPyEvents the epc was found in.
+        :param epc: The epc to search events for.
+        :return: A list of EPCPyEvents
+        '''
+        event_entries = entries.EntryEvent.objects.select_related(
+            'event'
+        ).filter(identifier=epc)
+        return [self.get_epcis_event(event_entry.event) for event_entry in
+                event_entries]
+
     def get_epcis_event(self, db_event: events.Event):
         '''
         Takes the raw database event record and converts it to an EPCPyYes

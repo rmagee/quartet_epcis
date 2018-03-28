@@ -58,7 +58,6 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(header.partners), 2)
         print(header.render())
 
-
     def test_get_aggregation_event(self):
         self._parse_test_data()
         ae = events.Event.objects.filter(
@@ -71,6 +70,12 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.child_epcs), 5)
         self.assertEqual(event.parent_id, 'urn:epc:id:sgtin:305555.3555555.1')
         print(event.render())
+
+    def test_get_events_by_epc(self):
+        self._parse_test_data()
+        qp = queries.EPCISDBProxy()
+        events = qp.get_events_by_epc('urn:epc:id:sgtin:305555.0555555.1')
+        self.assertEqual(len(events), 3)
 
     def test_get_transaction_event(self):
         self._parse_test_data()
