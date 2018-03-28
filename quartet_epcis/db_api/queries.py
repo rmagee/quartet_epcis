@@ -14,9 +14,11 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import logging
+from django.utils.translation import ugettext as _
 from EPCPyYes.core.v1_2 import template_events, events as pyyes_events
+from EPCPyYes.core.SBDH import sbdh, template_sbdh
 from quartet_epcis.models.choices import EventTypeChoicesEnum
-from quartet_epcis.models import events, entries
+from quartet_epcis.models import events, entries, headers
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,6 @@ class EPCISDBProxy:
     the EPCIS schema / XML model by converting queries for data into
     EPCPyYes objects.
     '''
-
     def get_epcis_event(self, db_event: events.Event):
         '''
         Takes the raw database event record and converts it to an EPCPyYes
@@ -71,9 +72,68 @@ class EPCISDBProxy:
             ret = self._get_aggregation_event(db_event)
         elif db_event.type == EventTypeChoicesEnum.TRANSACTION.value:
             ret = self._get_transaction_event(db_event)
+        elif db_event.type == EventTypeChoicesEnum.TRANSFORMATION.value:
+            ret = self._get_transformation_event(db_event)
         else:
             ret = None
         # proxy out the call to the specific function
+        return ret
+
+    def get_sbdh(self, instance_identifier: str):
+        '''
+        Use the instance identifier to retrieve a full EPCIS document
+        standard business document header.
+        :param instance_identifier: The unique id for the document.
+        :return: A full EPCPyYes representation of the EPCIS message.
+        '''
+        try:
+            db_header = headers.SBDH.objects.select_related(
+                'document_identification',
+                'message').prefetch_related('partner_set').get(
+                document_identification__instance_identifier=
+                instance_identifier)
+            if db_header.document_identification:
+                # get the document identification data
+                header = template_sbdh.StandardBusinessDocumentHeader()
+                header.document_identification.instance_identifier = \
+                    db_header.document_identification.instance_identifier
+                header.document_identification.creation_date_and_time = \
+                    db_header.document_identification.creation_date_and_time
+                header.document_identification.standard = \
+                    db_header.document_identification.standard
+                header.document_identification.type_version = \
+                    db_header.document_identification.type_version
+                header.document_identification.multiple_type = \
+                    db_header.document_identification.multiple_type
+                header.document_identification.document_type = \
+                    db_header.document_identification.document_type
+            # get the partners
+            header.partners = self.get_partner_list(db_header)
+            return header
+        except headers.DocumentIdentification.DoesNotExist:
+            raise headers.DocumentIdentification.DoesNotExist(
+                _('The EPCIS document with instance identifier %s '
+                  'could not be found in the database.' % instance_identifier)
+            )
+
+    def get_partner_list(self, db_header: headers.SBDH):
+        '''
+        Gets partner list information from the database and returns
+        as EPCPyYes partner list.
+        :param db_header: The database SBDH model instance.
+        :return: A list of EPCPyYes.core.SBDH.sbdh.Partner instances
+        '''
+        ret = []
+        for db_partner in db_header.partner_set.all():
+            partner = sbdh.Partner(partner_type=sbdh.PartnerType(
+                db_partner.partner_type))
+            partner.partner_id = db_partner.identifier
+            partner.contact_type_identifier = db_partner.contact_type_identifier
+            partner.contact = db_partner.contact
+            partner.telephone_number = db_partner.telephone_number
+            partner.fax_number = db_partner.fax_number
+            partner.email_address = db_partner.email_address
+            ret.append(partner)
         return ret
 
     def get_error_declaration(self, db_event: events.Event,
@@ -125,22 +185,36 @@ class EPCISDBProxy:
         :param db_event: The event
         :return:
         '''
+        logger.debug('Getting business event data for db event %s', db_event)
         p_event.biz_location = db_event.biz_location
         p_event.read_point = db_event.read_point
-        p_event.event_id = db_event.event_id
         p_event.disposition = db_event.disposition
         p_event.biz_step = db_event.biz_step
         p_event.action = db_event.action
-        self.get_error_declaration(db_event, p_event)
-        p_event.event_time = db_event.event_time.isoformat()
-        p_event.event_timezone_offset = db_event.event_timezone_offset
-        p_event.record_time = db_event.record_time.isoformat()
+        self.get_base_epcis_event(db_event, p_event)
         p_event.business_transaction_list = self.get_business_transactions(
             db_event
         )
         p_event.source_list = self.get_source_list(db_event)
         p_event.destination_list = self.get_destination_list(db_event)
         return p_event
+
+    def get_base_epcis_event(self, db_event, p_event):
+        '''
+        All of the EPCPyYes events share a common base class.  This
+        function pulls the data relative to the db_event out of the
+        database and populates the base EPCPyYes EPCISEvent class
+        fields.
+        :param db_event: The database model class instance for the event.
+        :param p_event: The EPCPyYes event that inherits from the
+        base EPCISEvent class.
+        '''
+        logger.debug('Getting base epcis data for db event %s', db_event)
+        self.get_error_declaration(db_event, p_event)
+        p_event.event_time = db_event.event_time.isoformat()
+        p_event.event_timezone_offset = db_event.event_timezone_offset
+        p_event.record_time = db_event.record_time.isoformat()
+        p_event.event_id = db_event.event_id
 
     def get_source_list(self, db_event: events.Event):
         '''
@@ -196,17 +270,43 @@ class EPCISDBProxy:
         except entries.EntryEvent.DoesNotExist:
             logger.info('No parent for event %s', db_event.id)
 
-    def get_epc_list(self, db_event: events.Event, is_parent=False):
+    def get_epc_list(
+        self, db_event: events.Event, is_parent=False, output=False
+    ):
         '''
         Returns all of the EPCs for a given Event.
         :param db_event: The event to look up the EPCs (Entries) for.
+        :param is_parent: Whether or not to return any parent ids with
+        the result.
+        :param output: Whether or not to look for output epc values- only
+        for use with transformation events.
         :return: A list of EPCs.
         '''
         ee = entries.EntryEvent.objects.select_related('entry').filter(
             event=db_event,
-            is_parent=is_parent
+            is_parent=is_parent,
+            output=output
         )
         return [e.entry.identifier for e in ee]
+
+    def get_input_epc_list(self, db_event: events.Event):
+        '''
+        Just a helper function to make the code more clear when working
+        with transformation events.
+        :param xform_event: The transformation event to get the input epcs for.
+        :return: A list of epc (string) values.
+        '''
+        return self.get_epc_list(db_event)
+
+    def get_output_epc_list(self, db_event: events.Event):
+        '''
+        Just a helper function to make the code more clear when working
+        with transformation events.
+        :param xform_event: The transformation event to get the output
+        epcs for.
+        :return: A list of epc (string) values.
+        '''
+        return self.get_epc_list(db_event, output=True)
 
     def get_quantity_list(self, db_event: events.Event, is_output=False):
         '''
@@ -284,6 +384,50 @@ class EPCISDBProxy:
         xact_event.parent_id = self.get_parent_epc(db_event)
         xact_event.quantity_list = self.get_quantity_list(db_event)
         return xact_event
+
+    def _get_transformation_event(self, db_event: events.Event):
+        '''
+        Reconstructs a full transformation event from the data
+        in the database relative the the passed in db_event parameter.
+        :param db_event: The event to use to pull the relevant data out
+        of the database.
+        :return: An EPCPyYes template_event TransformationEvent.
+        '''
+        xform_event = template_events.TransformationEvent()
+        # get the basic EPCISEvent values
+        self.get_base_epcis_event(db_event, xform_event)
+        logger.debug('Hadling a transformation event %s', db_event)
+        xform_event.input_epc_list = self.get_input_epc_list(db_event)
+        xform_event.output_epc_list = self.get_output_epc_list(db_event)
+        xform_event.input_quantity_list = self.get_quantity_list(db_event)
+        xform_event.output_quantity_list = self.get_quantity_list(
+            db_event, is_output=True
+        )
+        xform_event.destination_list = self.get_destination_list(db_event)
+        xform_event.source_list = self.get_source_list(db_event)
+        xform_event.ilmd = self.get_ilmd(db_event)
+        xform_event.business_transaction_list = self.get_business_transactions(
+            db_event
+        )
+        xform_event.biz_location = db_event.biz_location
+        xform_event.read_point = db_event.read_point
+        xform_event.disposition = db_event.disposition
+        xform_event.biz_step = db_event.biz_step
+        xform_event.transformation_id = self.get_transformation_id(db_event)
+        return xform_event
+
+    def get_transformation_id(self, db_event: events.Event):
+        '''
+        Looks up the transformation id for a given transformation event.
+        :param db_event: The Event model instance to use for the lookup.
+        :return: The transformation id as a string.
+        '''
+        try:
+            tid = events.TransformationID.objects.get(event=db_event)
+            return tid.identifier
+        except events.TransformationID.DoesNotExist:
+            logger.debug('No transformation id was found for event %s',
+                         db_event)
 
     def get_entries_by_event(self, db_event: events.Event):
         '''

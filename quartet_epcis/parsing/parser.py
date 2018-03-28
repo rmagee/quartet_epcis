@@ -69,6 +69,7 @@ class QuartetParser(EPCISParser):
     def handle_sbdh(self,
                     header: template_sbdh.StandardBusinessDocumentHeader):
         db_header = headers.SBDH()
+        db_header.message = self._message
         db_sbdh_id = headers.DocumentIdentification()
         logger.debug('Saving the document identification data.')
         db_sbdh_id.document_type = header.document_identification.document_type
@@ -83,25 +84,28 @@ class QuartetParser(EPCISParser):
         db_header.document_identification = db_sbdh_id
         logger.debug('Document identification is saved, looking for '
                      'partner data')
+        db_header.save()
+        partner_cache = []
         if header.partners:
             for partner in header.partners:
                 db_partner = headers.Partner(
                     partner_type=partner.partner_type,
-                    header = db_header
+                    header=db_header
                 )
-            if partner.partner_id:
-                db_partner.authority = partner.partner_id.authority
-                db_partner.identifier = partner.partner_id.value
-            if partner.has_contact_info:
-                db_partner.contact = partner.contact
-                db_partner.email_address = partner.email_address
-                db_partner.fax_number = partner.fax_number
-                db_partner.telephone_number = partner.telephone_number
-                db_partner.contact_type_identifier = \
-                    partner.contact_type_identifier
-            logger.debug('Adding partner to the sbdh model instance.')
-        db_header.message_id = self._message.id
-        db_header.save()
+                if partner.partner_id:
+                    db_partner.authority = partner.partner_id.authority
+                    db_partner.identifier = partner.partner_id.value
+                if partner.has_contact_info:
+                    db_partner.contact = partner.contact
+                    db_partner.email_address = partner.email_address
+                    db_partner.fax_number = partner.fax_number
+                    db_partner.telephone_number = partner.telephone_number
+                    db_partner.contact_type_identifier = \
+                        partner.contact_type_identifier
+                    partner_cache.append(db_partner)
+                logger.debug('Adding partner to the sbdh model instance.')
+        [p.save() for p in partner_cache]
+
 
     def handle_transaction_event(
         self,

@@ -33,11 +33,11 @@ else:
     MIDDLEWARE_CLASSES = ()
 
 import logging
-import logging.config
-logging.basicConfig(
-    level=logging.DEBUG,
-    handlers=[logging.StreamHandler()],
-)
+# import logging.config
+# logging.basicConfig(
+#     level=logging.DEBUG,
+#     handlers=[logging.StreamHandler()],
+# )
 # LOGGING = {
 #     'version': 1,
 #     'disable_existing_loggers': False,

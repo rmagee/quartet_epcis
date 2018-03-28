@@ -45,6 +45,20 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.ilmd), 2)
         print(event.render())
 
+    def test_get_header(self):
+        '''
+        Get the business document header.
+        '''
+        self._parse_test_data()
+        ae = events.Event.objects.filter(
+            type=choices.EventTypeChoicesEnum.OBJECT.value
+        )
+        qp = queries.EPCISDBProxy()
+        header = qp.get_sbdh('55abd29c-010e-489e-af31-8f095b48dff9')
+        self.assertEqual(len(header.partners), 2)
+        print(header.render())
+
+
     def test_get_aggregation_event(self):
         self._parse_test_data()
         ae = events.Event.objects.filter(
@@ -70,6 +84,23 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.destination_list), 2)
         self.assertEqual(len(event.epc_list), 5)
         self.assertEqual(event.parent_id, 'urn:epc:id:sgtin:305555.3555555.1')
+        print(event.render())
+
+    def test_get_transformation_event(self):
+        self._parse_test_data()
+        te = events.Event.objects.filter(
+            type=choices.EventTypeChoicesEnum.TRANSFORMATION.value
+        )
+        qp = queries.EPCISDBProxy()
+        event = qp.get_epcis_event(te[0])
+        self.assertEqual(len(event.business_transaction_list), 2)
+        self.assertEqual(len(event.source_list), 2)
+        self.assertEqual(len(event.destination_list), 2)
+        self.assertEqual(len(event.input_epc_list), 10)
+        self.assertEqual(len(event.output_epc_list), 10)
+        self.assertEqual(len(event.input_quantity_list), 2)
+        self.assertEqual(len(event.output_quantity_list), 2)
+        self.assertEqual(len(event.ilmd), 2)
         print(event.render())
 
     def _parse_test_data(self):
