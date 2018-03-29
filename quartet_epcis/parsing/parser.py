@@ -60,11 +60,15 @@ class QuartetParser(EPCISParser):
         '''
         Creates the message for use in associating events and then
         executes the base-class parse function.
+        :return: returns the message id created by the parsing of tbe
+        inbound data.  See the headers.Message model in the models
+        package.
         '''
         self._message = headers.Message()
         self._message.save()
         super().parse()
         self.clear_cache()
+        return self._message.id
 
     def handle_sbdh(self,
                     header: template_sbdh.StandardBusinessDocumentHeader):

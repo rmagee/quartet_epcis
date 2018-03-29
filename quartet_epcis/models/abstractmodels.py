@@ -18,7 +18,16 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from quartet_epcis.models import choices
+from haikunator import Haikunator
+haiku = Haikunator()
 
+def haikunate():
+    '''
+    Since the haikunator is a class method
+    it could not be used directly as a default callable for
+    a django field...hence this function.
+    '''
+    return haiku.haikunate(token_length=7, token_hex=True)
 
 class UUIDModel(models.Model):
     '''
@@ -89,11 +98,13 @@ class EPCISEvent(UUIDModel):
     event_id = models.CharField(
         max_length=150,
         null=True,
+        default=haikunate,
         help_text=_('An identifier for this event as specified by the '
                     'capturing application, globally unique across all events '
                     'other than error declarations. Not to be confused with '
                     'the unique id/primary key for events within a database.'),
-        verbose_name=_('Event ID')
+        verbose_name=_('Event ID'),
+        db_index=True
     )
 
     class Meta:

@@ -14,12 +14,35 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import os
 from django.test import TestCase
-from quartet_epcis.models import events, choices
+from quartet_epcis.models import events, choices, headers
 from quartet_epcis.db_api import queries
 from quartet_epcis.parsing.parser import QuartetParser
 
 
 class QueriesTestCase(TestCase):
+    '''
+    This test case tests the db_api.EPCISDBProxy class, which acts
+    as an abstraction layer between the flattend somewhat non-epcis
+    back-end database and the developer.  The proxy class converts
+    query results into `EPCPyYes.core.v1_2.template_event` (and SBDH)
+    class instances which allow for clearer code and faster development.
+    '''
+
+    def test_get_message(self):
+        '''
+        Based on a Message model, get the full EPCIS document that
+        represents that message as it was received as EPCPyYes objects.
+        '''
+        message_id = self._parse_test_data()
+        message = headers.Message.objects.get(id=message_id)
+        qp = queries.EPCISDBProxy()
+        epcis_document = qp.get_full_message(message)
+        self.assertEqual(len(epcis_document.transaction_events), 1)
+        self.assertEqual(len(epcis_document.transformation_events), 1)
+        self.assertEqual(len(epcis_document.object_events), 1)
+        self.assertEqual(len(epcis_document.aggregation_events), 1)
+        self.assertIsNotNone(epcis_document.header)
+        print(epcis_document.render())
 
     def test_get_events(self):
         '''
@@ -113,6 +136,7 @@ class QueriesTestCase(TestCase):
         parser = QuartetParser(
             os.path.join(curpath, 'data/epcis.xml')
         )
-        parser.parse()
+        message_id = parser.parse()
         print(parser.event_cache)
         parser.clear_cache()
+        return message_id

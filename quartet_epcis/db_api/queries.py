@@ -57,6 +57,47 @@ class EPCISDBProxy:
     the EPCIS schema / XML model by converting queries for data into
     EPCPyYes objects.
     '''
+
+    def get_full_message(self, message: headers.Message):
+        '''
+        Returns all of the events and hethe ader in a given message as
+        a collection of EPCPyYes class instances.
+        :param message: The message to use as the lookup for the header
+        and event instances.
+        :return: An EPCPyYes.core.v1_2.events.EPCISDocument with all parts
+        associated with the given message.
+        '''
+        document = template_events.EPCISDocument()
+        try:
+            # first get the header if there was one
+            db_header = headers.SBDH.objects.get(message=message)
+            document.header = self._get_header(db_header)
+        except SBDH.DoesNotExist:
+            logger.debug('There was no document header associated '
+                         'with message %s', message)
+        # now get the events
+        db_events = events.Event.objects.prefetch_related(
+            'transformationid_set',
+            'errordeclaration_set',
+            'quantityelement_set',
+            'businesstransaction_set',
+            'instancelotmasterdata_set',
+            'sourceevent_set__source',
+            'destinationevent_set__destination',
+        ).filter(message_id=message.id)
+        pevents = [self.get_epcis_event(db_event) for db_event in
+                   db_events]
+        for event in pevents:
+            if isinstance(event, pyyes_events.TransformationEvent):
+                document.transformation_events.append(event)
+            elif isinstance(event, pyyes_events.TransactionEvent):
+                document.transaction_events.append(event)
+            elif isinstance(event, pyyes_events.ObjectEvent):
+                document.object_events.append(event)
+            elif isinstance(event, pyyes_events.AggregationEvent):
+                document.aggregation_events.append(event)
+        return document
+
     def get_events_by_epc(self, epc: str):
         '''
         Returns a list of EPCPyEvents the epc was found in.
@@ -65,6 +106,14 @@ class EPCISDBProxy:
         '''
         event_entries = entries.EntryEvent.objects.select_related(
             'event'
+        ).prefetch_related(
+            'event__transformationid_set',
+            'event__errordeclaration_set',
+            'event__quantityelement_set',
+            'event__businesstransaction_set',
+            'event__instancelotmasterdata_set',
+            'event__sourceevent_set__source',
+            'event__destinationevent_set__destination',
         ).filter(identifier=epc)
         return [self.get_epcis_event(event_entry.event) for event_entry in
                 event_entries]
@@ -104,29 +153,38 @@ class EPCISDBProxy:
                 'message').prefetch_related('partner_set').get(
                 document_identification__instance_identifier=
                 instance_identifier)
-            if db_header.document_identification:
-                # get the document identification data
-                header = template_sbdh.StandardBusinessDocumentHeader()
-                header.document_identification.instance_identifier = \
-                    db_header.document_identification.instance_identifier
-                header.document_identification.creation_date_and_time = \
-                    db_header.document_identification.creation_date_and_time
-                header.document_identification.standard = \
-                    db_header.document_identification.standard
-                header.document_identification.type_version = \
-                    db_header.document_identification.type_version
-                header.document_identification.multiple_type = \
-                    db_header.document_identification.multiple_type
-                header.document_identification.document_type = \
-                    db_header.document_identification.document_type
-            # get the partners
-            header.partners = self.get_partner_list(db_header)
+            header = self._get_header(db_header)
             return header
         except headers.DocumentIdentification.DoesNotExist:
             raise headers.DocumentIdentification.DoesNotExist(
                 _('The EPCIS document with instance identifier %s '
                   'could not be found in the database.' % instance_identifier)
             )
+
+    def _get_header(self, db_header):
+        '''
+        Constucts an EPCPyYes header from the database header supplied.
+        :param db_header:
+        :return: An EPCPyYes header.
+        '''
+        if db_header.document_identification:
+            # get the document identification data
+            header = template_sbdh.StandardBusinessDocumentHeader()
+            header.document_identification.instance_identifier = \
+                db_header.document_identification.instance_identifier
+            header.document_identification.creation_date_and_time = \
+                db_header.document_identification.creation_date_and_time
+            header.document_identification.standard = \
+                db_header.document_identification.standard
+            header.document_identification.type_version = \
+                db_header.document_identification.type_version
+            header.document_identification.multiple_type = \
+                db_header.document_identification.multiple_type
+            header.document_identification.document_type = \
+                db_header.document_identification.document_type
+        # get the partners
+        header.partners = self.get_partner_list(db_header)
+        return header
 
     def get_partner_list(self, db_header: headers.SBDH):
         '''

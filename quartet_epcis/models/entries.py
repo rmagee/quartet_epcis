@@ -41,6 +41,7 @@ class Entry(abstractmodels.UUIDModel):
         verbose_name_plural = _('Entries')
         app_label = 'quartet_epcis'
 
+
 class EntryEvent(models.Model):
     '''
     An intersection entity for events and entries.
@@ -81,7 +82,7 @@ class EntryEvent(models.Model):
     )
 
     def __str__(self):
-        return '{0}:{1}'.format(self.entry_id,event_id)
+        return '{0}:{1}'.format(self.entry_id, event_id)
 
     class Meta:
         verbose_name = _('Entry Event Record')
