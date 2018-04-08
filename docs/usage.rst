@@ -44,3 +44,7 @@ then parse any EPCIS 1.2 XML documents directly into the database as such:
     parser = QuartetParser(
         os.path.join(curpath, 'data/epcis.xml')
     )
+
+Using the EPCIS Database Proxy
+==============================
+

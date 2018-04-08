@@ -88,7 +88,7 @@
                                 type="urn:epcglobal:cbv:sdt:location">
                             urn:epc:id:sgln:309999.111111.233
                         </destination>
-                    </destinationList>
+                    </destinationList>x
                     <ilmd>
                         <cbvmd:itemExpirationDate>2015-12-31
                         </cbvmd:itemExpirationDate>

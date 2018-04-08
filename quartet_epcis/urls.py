@@ -13,10 +13,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
-
+from django.conf.urls import url
 from quartet_epcis.routers import router
+from quartet_epcis import views
 
 app_name = 'quartet_epcis'
 
-urlpatterns = []
+urlpatterns = [
+    url(r'^event-detail/?$',
+        views.EventDetailView.as_view(), name='event-detail'),
+    url(r'^event-detail/(?P<event_id>[0-9a-fA-F\-_]{1,50})/$',
+        views.EventDetailView.as_view(), name='event-detail'),
+]
 urlpatterns += router.urls
+print(urlpatterns)

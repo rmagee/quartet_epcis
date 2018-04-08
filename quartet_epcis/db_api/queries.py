@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import logging
+from django.db.models import Q
 from django.utils.translation import ugettext as _
 from EPCPyYes.core.v1_2 import template_events, events as pyyes_events
 from EPCPyYes.core.SBDH import sbdh, template_sbdh
@@ -139,6 +140,18 @@ class EPCISDBProxy:
             ret = None
         # proxy out the call to the specific function
         return ret
+
+    def get_event_by_id(self, event_id: str):
+        '''
+        Looks up an event by it's primary key or event_id value.
+        :param event_id: an event identifier that corresponds to one
+        of the two values.
+        :return: An Event model instance.
+        '''
+        db_event = events.Event.objects.get(
+            Q(id=event_id) | Q(event_id=event_id))
+        return self.get_epcis_event(db_event)
+
 
     def get_sbdh(self, instance_identifier: str):
         '''
