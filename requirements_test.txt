@@ -10,5 +10,5 @@ django-model-utils
 haikunator
 -e git+git@gitlab.com:serial-lab/EParseCIS.git#egg=eparsecis
 -e git+git@gitlab.com:serial-lab/EPCPyYes.git#egg=epcpyyes
-
+-e git+git@gitlab.com:serial-lab/quartet_capture.git#egg=quartet_capture
 # Additional test requirements go here

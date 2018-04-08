@@ -9,6 +9,8 @@ omit =
     *tests*
     *.tox*
     *apps.py
+    *__init__.py
+    *admin.py
 show_missing = True
 exclude_lines =
     raise NotImplementedError
