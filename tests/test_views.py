@@ -29,7 +29,7 @@ class EPCISProxyViewTests(APITestCase):
         self._parse_test_data()
         db_event = events.Event.objects.all()[0]
         url = reverse('event-detail', args=[str(db_event.id)])
-        result = self.client.get(url)
+        result = self.client.get(url, format='json')
         content = json.loads(result.content.decode(result.charset))
         event = content['objectEvent']
         self.assertEqual(event['action'], 'ADD')
@@ -56,6 +56,10 @@ class EPCISProxyViewTests(APITestCase):
         self.assertEqual(len(event['destinationList']), 2)
         self.assertEqual(event['ilmd']['itemExpirationDate'], '2015-12-31')
         self.assertEqual(event['ilmd']['lotNumber'], 'DL232')
+        # make sure the XML request works as well
+        result = self.client.get(url, format='xml')
+        print(result.content.decode(result.charset))
+
 
     def _parse_test_data(self):
         curpath = os.path.dirname(__file__)

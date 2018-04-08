@@ -22,11 +22,14 @@ from quartet_epcis.models import events
 
 proxy = EPCISDBProxy()
 
+
 class EventDetailView(views.APIView):
-    def get(self, request: Request, format=None, event_id: str=None):
+    def get(self, request: Request, format=None, event_id: str = None):
         '''
         Based on an inbound event id, will return the full event data as
-        JSON string.
+        JSON or XML string.  The event_id that is passed in can be either the
+        primary key of the event in the database or the actual EPCIS event_id
+        value that uniquely identifies the event.
         :return: A JSON string representing the event.
         '''
         response_data = {}
@@ -35,7 +38,8 @@ class EventDetailView(views.APIView):
                 event = proxy.get_event_by_id(event_id)
                 # render xml if the content type
                 if 'xml' in request.content_type.lower() or \
-                        'xml' in request.query_params.get('format', ''):
+                    'xml' in request.query_params.get('format', '') or \
+                        format == 'xml':
                     response_data = event.render(event.render())
                 else:
                     # else render JSON
