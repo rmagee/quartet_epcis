@@ -8,6 +8,7 @@ codecov>=2.0.0
 recommonmark
 django-model-utils
 haikunator
+django-model-utils
 -e git+git@gitlab.com:serial-lab/EParseCIS.git#egg=eparsecis
 -e git+git@gitlab.com:serial-lab/EPCPyYes.git#egg=epcpyyes
 -e git+git@gitlab.com:serial-lab/quartet_capture.git#egg=quartet_capture
