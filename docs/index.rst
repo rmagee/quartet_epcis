@@ -21,17 +21,16 @@ ______________________
 * Defines the database schema for EPCIS 1.2 data.
 * Will parse an EPCIS 1.2 compliant XML document and load that data into
   the configured backend database of your django application.
+* Defines an API for querying EPCIS data
 
 What This Package Doesn't Do
 ____________________________
-The sole purpose of this package is to define the backend schema and a
-mechanism to parse EPCIS data into that schema/backend.  Handing the actual
-work and defining any type of external APIs are left to other Quartet packages
-that rely on this one.  For an example of how to load EPCIS XML into a
-database, see the *Usage" page in this documentation.
 
-* Define an API for loading XML
-* Define an API for querying EPCIS data
+The sole purpose of this package is to define the backend schema and a
+mechanism to parse EPCIS data into that schema/backend.  For an example of how
+to load EPCIS XML into a database, see the *Usage* page in this documentation.
+
+
 
 Contents
 ________
@@ -45,3 +44,4 @@ ________
    authors
    history
    modules
+

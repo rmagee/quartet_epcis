@@ -26,6 +26,7 @@ from quartet_epcis.models import events
 EventList = List[events.Event]
 proxy = EPCISDBProxy()
 
+
 class EventDetailView(views.APIView):
     def get(self, request: Request, format=None, event_id: str = None):
         '''
@@ -37,7 +38,7 @@ class EventDetailView(views.APIView):
         The URI for a given event is as below (assuming that the urls.py
         was configured for access via `epcis`):
 
-        .. code-block: text
+        .. code-block:: text
 
             # default format is json so format query parameter is optional
             http[s]:/[hostname]:[port]/epcis/event-detail/[event id]/?format=[xml,json]
@@ -46,6 +47,7 @@ class EventDetailView(views.APIView):
             http://localhost:8000/epcis/event-detail/1d1fa10f-4421-4f2a-af10-4ddb4951807c/?format=json
 
         :return: A JSON string representing the event.
+
         '''
 
         response_data = {}
@@ -79,12 +81,21 @@ class EntryEventHistoryView(views.APIView):
         it's primary key value in the data store or its identifier field
         which is typically the textual identifier such as an EPC urn.
 
+        .. code-block:: text
+
+            # default format is json so format query parameter is optional
+            http[s]:/[hostname]:[port]/epcis/events-by-entry-id/?format=[xml,json]
+
+            # an example get reques for xml format
+            http://localhost:8000/epcis/events-by-entry-id/urn:epc:id:sgtin:305555.05555sdf55.1/?format=xml
+
         :param request: The HTTP request
         :param format: json or xml
         :param entry_pk: The entry primary key.
         :param entry_identifier: The entry identifier.
         :return: A series of XML or JSON structures representing the events
         associated with the inbound id.
+
         '''
         args = {'epc_pk': entry_pk} if entry_pk else {
             'epc': entry_identifier}
@@ -95,8 +106,8 @@ class EntryEventHistoryView(views.APIView):
             if 'xml' in request.content_type.lower() or \
                 'xml' in request.query_params.get('format', '') or \
                 format == 'xml':
-                    # render xml or...
-                    response_data = epcis_document.render()
+                # render xml or...
+                response_data = epcis_document.render()
             else:
                 # render json
                 response_data = epcis_document.render_dict()
@@ -104,5 +115,3 @@ class EntryEventHistoryView(views.APIView):
         else:
             raise NotFound(_('The entry with id %s could not be found.' % \
                              str(args)))
-
-
