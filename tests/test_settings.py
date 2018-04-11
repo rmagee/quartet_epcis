@@ -33,6 +33,14 @@ if django.VERSION >= (1, 10):
 else:
     MIDDLEWARE_CLASSES = ()
 
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+        'quartet_epcis.renderers.EPCPyYesXMLRenderer',
+    )
+}
+
 import logging
 # import logging.config
 # logging.basicConfig(

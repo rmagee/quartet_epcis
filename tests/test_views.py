@@ -17,7 +17,7 @@ import json
 from quartet_epcis.parsing.parser import QuartetParser
 from rest_framework.test import APITestCase
 from django.urls import reverse
-from quartet_epcis.models import events
+from quartet_epcis.models import events, entries
 
 
 class EPCISProxyViewTests(APITestCase):
@@ -60,6 +60,13 @@ class EPCISProxyViewTests(APITestCase):
         result = self.client.get(url, format='xml')
         print(result.content.decode(result.charset))
 
+    def test_get_events_by_epc(self):
+        self._parse_test_data()
+        entry = entries.Entry.objects.all()[0]
+        url = reverse('events-by-entry-id',
+                      kwargs={'entry_identifier': entry.identifier})
+        result = self.client.get(url, format='json')
+        print(result.content.decode(result.charset))
 
     def _parse_test_data(self):
         curpath = os.path.dirname(__file__)

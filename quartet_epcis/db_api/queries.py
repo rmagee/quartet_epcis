@@ -99,12 +99,14 @@ class EPCISDBProxy:
                 document.aggregation_events.append(event)
         return document
 
-    def get_events_by_epc(self, epc: str):
+    def get_events_by_epc(self, epc: str = None, epc_pk: str = None):
         '''
         Returns a list of EPCPyEvents the epc was found in.
         :param epc: The epc to search events for.
+        :param epc_pk: The primary key of the epc to search events for.
         :return: A list of EPCPyEvents
         '''
+        args = {'identifier': epc} if epc else {'id': epc_pk}
         event_entries = entries.EntryEvent.objects.select_related(
             'event'
         ).prefetch_related(
@@ -115,7 +117,7 @@ class EPCISDBProxy:
             'event__instancelotmasterdata_set',
             'event__sourceevent_set__source',
             'event__destinationevent_set__destination',
-        ).filter(identifier=epc)
+        ).filter(**args)
         return [self.get_epcis_event(event_entry.event) for event_entry in
                 event_entries]
 
@@ -151,7 +153,6 @@ class EPCISDBProxy:
         db_event = events.Event.objects.get(
             Q(id=event_id) | Q(event_id=event_id))
         return self.get_epcis_event(db_event)
-
 
     def get_sbdh(self, instance_identifier: str):
         '''
