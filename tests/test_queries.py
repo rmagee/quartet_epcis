@@ -44,6 +44,19 @@ class QueriesTestCase(TestCase):
         self.assertIsNotNone(epcis_document.header)
         print(epcis_document.render())
 
+    def test_get_ilmd(self):
+        '''
+        Tests the abilitiy to pull events out by ilmd value.
+        '''
+        self._parse_test_data()
+        qp = queries.EPCISDBProxy()
+        result = qp.get_events_by_ilmd(name='lotNumber', value='DL232')
+        # there should be two events
+        self.assertEqual(len(result), 2)
+        # now test a bad request
+        result = qp.get_events_by_ilmd(name='badName', value='badValue')
+        self.assertEqual(len(result), 0)
+
     def test_get_events(self):
         '''
         Pulls an object event out of the database.

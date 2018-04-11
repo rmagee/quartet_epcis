@@ -12,6 +12,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
+import logging
 from typing import List
 from gettext import gettext as _
 from rest_framework import views
@@ -23,11 +24,32 @@ from EPCPyYes.core.v1_2 import template_events
 from quartet_epcis.db_api.queries import EPCISDBProxy
 from quartet_epcis.models import events
 
+logger = logging.getLogger(__name__)
 EventList = List[events.Event]
 proxy = EPCISDBProxy()
 
 
-class EventDetailView(views.APIView):
+class FormatHelperMixin:
+    '''
+    This mixin helps determine whether or not to call the xml template_event
+    functionality or the JSON functionality based on the inbound
+    content type of the HTTP request or the explicit format request
+    in the HTTP query parameters.
+    '''
+
+    def get_formatted_data(self, request: Request, template_event,
+                           format=None):
+        if 'xml' in request.content_type.lower() or \
+            'xml' in request.query_params.get('format', '') or \
+            format == 'xml':
+            response_data = template_event.render()
+        else:
+            # else render JSON
+            response_data = template_event.render_dict()
+        return response_data
+
+
+class EventDetailView(views.APIView, FormatHelperMixin):
     def get(self, request: Request, format=None, event_id: str = None):
         '''
         Based on an inbound event id, will return the full event data as
@@ -54,14 +76,7 @@ class EventDetailView(views.APIView):
         try:
             if event_id:
                 event = proxy.get_event_by_id(event_id)
-                # render xml if the content type
-                if 'xml' in request.content_type.lower() or \
-                    'xml' in request.query_params.get('format', '') or \
-                    format == 'xml':
-                    response_data = event.render()
-                else:
-                    # else render JSON
-                    response_data = event.render_dict()
+                response_data = self.get_formatted_data(request, event, format)
             response = Response(response_data, status=status.HTTP_200_OK)
         except events.Event.DoesNotExist:
             response = Response('Event with id %s could not be '
@@ -69,7 +84,7 @@ class EventDetailView(views.APIView):
         return response
 
 
-class EntryEventHistoryView(views.APIView):
+class EntryEventHistoryView(views.APIView, FormatHelperMixin):
     '''
     Returns all of the events associated with a given EPC/Entry.
     '''
@@ -103,15 +118,32 @@ class EntryEventHistoryView(views.APIView):
         events = proxy.get_events_by_epc(**args)
         if len(events) > 0:
             epcis_document = template_events.EPCISEventListDocument(events)
-            if 'xml' in request.content_type.lower() or \
-                'xml' in request.query_params.get('format', '') or \
-                format == 'xml':
-                # render xml or...
-                response_data = epcis_document.render()
-            else:
-                # render json
-                response_data = epcis_document.render_dict()
+            response_data = self.get_formatted_data(request, epcis_document,
+                                                    format)
             return Response(response_data, status.HTTP_200_OK)
         else:
             raise NotFound(_('The entry with id %s could not be found.' % \
                              str(args)))
+
+
+class EventsByILMDView(views.APIView, FormatHelperMixin):
+    '''
+    Gets all events associated with an ILMD name and value pair.
+    For example Lot:2233
+    '''
+
+    def get(self, request: Request, format=None, ilmd_name=None,
+            ilmd_value=None):
+        pyyes_events = proxy.get_events_by_ilmd(ilmd_name, ilmd_value)
+        if len(pyyes_events) > 0:
+            epcis_document = template_events.EPCISEventListDocument(
+                pyyes_events)
+            response_data = self.get_formatted_data(request,
+                                                    epcis_document,
+                                                    format=format)
+            return Response(response_data, status.HTTP_200_OK)
+        else:
+            msg = _('No events could be found that match name %s ' \
+                    'and value %s' % (ilmd_name, ilmd_value))
+            logger.debug(msg)
+            raise NotFound(msg)

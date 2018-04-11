@@ -68,6 +68,18 @@ class EPCISProxyViewTests(APITestCase):
         result = self.client.get(url, format='json')
         print(result.content.decode(result.charset))
 
+    def test_get_events_by_ilmd(self):
+        '''
+        Ensures that the system can return lot information based on the
+        ILMD data in the test database.
+        '''
+        self._parse_test_data()
+        url = reverse('events-by-ilmd',
+                      kwargs={'ilmd_name': 'lotNumber', 'ilmd_value': 'DL232'})
+        result = self.client.get(url, format='json')
+        print(result.content.decode(result.charset))
+        self.assertEqual(result.status_code, 200)
+
     def _parse_test_data(self):
         curpath = os.path.dirname(__file__)
         parser = QuartetParser(

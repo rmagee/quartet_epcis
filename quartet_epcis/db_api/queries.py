@@ -143,6 +143,30 @@ class EPCISDBProxy:
         # proxy out the call to the specific function
         return ret
 
+    def get_events_by_ilmd(self, name, value):
+        '''
+        Returns a list of EPCPyYes events by ILMD name value pair.
+        Usefull for getting all events for a Lot, etc.
+        :param name: The ILMD field name.
+        :param value: The ILMD field value.
+        :return: A list of EPCPyYes template_event instances.
+        '''
+        ilmds = events.InstanceLotMasterData.objects.select_related(
+            'event'
+        ).prefetch_related(
+            'event__transformationid_set',
+            'event__errordeclaration_set',
+            'event__quantityelement_set',
+            'event__businesstransaction_set',
+            'event__instancelotmasterdata_set',
+            'event__sourceevent_set__source',
+            'event__destinationevent_set__destination',
+        ).filter(
+            name=name,
+            value=value
+        )
+        return [self.get_epcis_event(ilmd.event) for ilmd in ilmds]
+
     def get_event_by_id(self, event_id: str):
         '''
         Looks up an event by it's primary key or event_id value.

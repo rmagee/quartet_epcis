@@ -35,7 +35,16 @@ urlpatterns = [
         name='events-by-entry-pk'),
     url(r'^events-by-entry-pk/(?P<entry_pk>[0-9a-zA-Z\W]{1,100})/$',
         views.EntryEventHistoryView.as_view(),
-        name='events-by-entry-pk')
+        name='events-by-entry-pk'),
+    url(r'^events-by-ilmd/?$',
+        views.EventsByILMDView.as_view(),
+        name='events-by-ilmd'),
+    url(r'^events-by-ilmd/(?P<ilmd_name>[[\w\s\W]{1,150})/'
+        r'(?P<ilmd_value>[[\w\s\W]'
+        r'{1,255})/$',
+        views.EventsByILMDView.as_view(),
+        name='events-by-ilmd'),
 ]
+
 urlpatterns += router.urls
 print(urlpatterns)
