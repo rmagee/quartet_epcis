@@ -48,9 +48,15 @@ then parse any EPCIS 1.2 XML documents directly into the database as such:
 Using the EPCIS Database Proxy
 ==============================
 
+The EPCIS Database Proxy class is located at
+`quartet_epcis.db_api.queries.EPCISDatabaseProxy` and is documented in
+the modules section of these documents.  The proxy class is in place to
+abstract away the underlying database and to make querying the database
+simpler from a developer's perspective.
+
 The quartet_epcis package abstracts away the database for a few reasons. One,
 if the database changes radically at some point, the clients of the
 quartet_epcis APIs will never know and won't break.  Secondly, the database
 layer is flattened to make the management of EPCIS data both easier from
-a development persepective and for performance, tuning and flexibility reasons.
+a development perspective and for performance, tuning and flexibility reasons.
 

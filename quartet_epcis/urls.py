@@ -44,6 +44,14 @@ urlpatterns = [
         r'{1,255})/$',
         views.EventsByILMDView.as_view(),
         name='events-by-ilmd'),
+    url(r'^message/?$',
+        views.MessageDetail.as_view(),
+        name='message'
+        ),
+    url(r'^message/(?P<message_id>[\w-]{1,50})/$',
+        views.MessageDetail.as_view(),
+        name='message'
+        ),
 ]
 
 urlpatterns += router.urls

@@ -14,7 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 from rest_framework import viewsets
-from quartet_epcis.models import events, entries
+from quartet_epcis.models import events, entries, headers
 from quartet_epcis import serializers
 
 
@@ -112,3 +112,11 @@ class DestinationEventViewSet(viewsets.ModelViewSet):
     '''
     queryset = events.DestinationEvent.objects.all()
     serializer_class = serializers.DestinationEventSerializer
+
+
+class MessageViewSet(viewsets.ReadOnlyModelViewSet):
+    '''
+    Default view for messages.
+    '''
+    queryset = headers.Message.objects.all()
+    serializer_class = serializers.MessageSerializer

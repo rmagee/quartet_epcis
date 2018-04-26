@@ -14,7 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 from rest_framework.serializers import ModelSerializer
-from quartet_epcis.models import entries, events
+from quartet_epcis.models import entries, events, headers
 
 
 class EntrySerializer(ModelSerializer):
@@ -86,4 +86,10 @@ class DestinationSerializer(ModelSerializer):
 class DestinationEventSerializer(ModelSerializer):
     class Meta:
         model = events.DestinationEvent
+        fields = '__all__'
+
+
+class MessageSerializer(ModelSerializer):
+    class Meta:
+        model = headers.Message
         fields = '__all__'

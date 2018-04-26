@@ -40,3 +40,4 @@ router.register(r'destinations', viewsets.DestinationViewSet,
                 base_name='destinations')
 router.register(r'destination-event', viewsets.DestinationEventViewSet,
                 base_name='destinations')
+router.register(r'messages',viewsets.MessageViewSet, base_name='messages')

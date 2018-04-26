@@ -38,7 +38,7 @@ python3_6_unit_test:
       - htmlcov/
 
 pages:
-    image: seriallab/python3.5dev
+    image: seriallab/python3.6dev
     stage: build-docs
     script:
     - apt-get install -y git

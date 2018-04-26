@@ -22,7 +22,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework import status
 from EPCPyYes.core.v1_2 import template_events
 from quartet_epcis.db_api.queries import EPCISDBProxy
-from quartet_epcis.models import events
+from quartet_epcis.models import events, headers
 
 logger = logging.getLogger(__name__)
 EventList = List[events.Event]
@@ -147,3 +147,24 @@ class EventsByILMDView(views.APIView, FormatHelperMixin):
                     'and value %s' % (ilmd_name, ilmd_value))
             logger.debug(msg)
             raise NotFound(msg)
+
+
+class MessageDetail(views.APIView, FormatHelperMixin):
+    '''
+    Returns a list of the full EPCIS messages that were received.
+    '''
+
+    def get(self, request: Request, format=None, message_id=None):
+        '''
+        Returns a full EPCIS message based on the inbpund message id.
+        '''
+        # get the message
+        try:
+            db_message = headers.Message.objects.get(id=message_id)
+            message = proxy.get_full_message(db_message)
+            return Response(self.get_formatted_data(request, message))
+        except headers.Message.DoesNotExist:
+            found_message_id = 'The message with id %s could not ' \
+                               'be found' % message_id
+            logger.debug()
+            raise NotFound(found_message_id)

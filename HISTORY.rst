@@ -7,3 +7,9 @@ History
 ++++++++++++++++++
 
 * First release on PyPI.
+
+1.0.+ (2018-16-2017)
+++++++++++++++++++
+
+* First production-ready release.
+* CI build to auto-deploy tags to PyPI

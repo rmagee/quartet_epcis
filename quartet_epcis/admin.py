@@ -98,3 +98,7 @@ def register_to_site(admin_site):
                         InstanceLotMasterDataAdmin)
     admin_site.register(events.BusinessTransaction, BusinessTransactionAdmin)
     admin_site.register(events.QuantityElement, QuantityElementAdmin)
+    admin_site.register(headers.Message, MessageAdmin)
+    admin_site.register(headers.DocumentIdentification, MessageAdmin)
+    admin_site.register(headers.Partner, PartnerAdmin)
+    admin_site.register(headers.SBDH, SBDHAdmin)
