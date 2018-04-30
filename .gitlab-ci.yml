@@ -1,7 +1,7 @@
 stages:
     - test-python
     - build-docs
-    - deploy_pypi
+    - pypi
 
 before_script:
   - bash
