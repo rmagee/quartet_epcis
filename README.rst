@@ -1,7 +1,11 @@
-[![pipeline status](https://gitlab.com/serial-lab/quartet_epcis/badges/master/pipeline.svg)](https://gitlab.com/serial-lab/quartet_epcis/commits/master)
-[![coverage report](https://gitlab.com/serial-lab/quartet_epcis/badges/master/coverage.svg)](https://gitlab.com/serial-lab/quartet/commits/master)
+QU4RTET EPCIS
+=============
 
-# QU4RTET EPCIS
+.. image:: https://gitlab.com/serial-lab/quartet_epcis/badges/master/pipeline.svg
+        :target: https://gitlab.com/serial-lab/quartet_epcis/commits/master
+
+.. image:: https://gitlab.com/serial-lab/quartet_epcis/badges/master/coverage.svg
+        :target: https://gitlab.com/serial-lab/quartet_epcis/pipelines
 
 The quartet_epcis python package is a Django application that 
 contains the base database models necessary for the support of 
@@ -13,24 +17,30 @@ The quartet_epcis.app_models directory contains a set of
 Django ORM models that are used to define the database scheme 
 and store EPCIS data in the database.
 
-## Documentation
+Documentation
+-------------
 
 Find the latest docs here:
 
-[https://serial-lab.gitlab.io/quartet_epcis/](https://serial-lab.gitlab.io/quartet_epcis/)
+https://serial-lab.gitlab.io/quartet_epcis/
 
 
 The full (pre-built )documentation is under the docs directory in this project.
 
-## Quickstart
+Quickstart
+----------
 
+Install Quartet
++++++++++++++++
 
-Install Quartet::
+.. code-block::text
 
     pip install quartet_epcis
+    
 
 Add it to your `INSTALLED_APPS`:
 
+.. code-block::text
 
     INSTALLED_APPS = (
         ...
@@ -42,7 +52,7 @@ Add it to your `INSTALLED_APPS`:
 ## Features
 
 * Maintains the database schema for EPCIS 1.2 support.
-* Parses EPCIS 1.2 XML streams to the configured backend.
+* Parses EPCIS 1.2 XML streams to the configured backend database system.
 
 ## Running The Unit Tests
 
