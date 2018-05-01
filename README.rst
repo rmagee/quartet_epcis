@@ -49,15 +49,18 @@ Add it to your `INSTALLED_APPS`:
     )
 
 
-## Features
+Features
+--------
 
 * Maintains the database schema for EPCIS 1.2 support.
 * Parses EPCIS 1.2 XML streams to the configured backend database system.
 
-## Running The Unit Tests
+Running The Unit Tests
+----------------------
 
-Does the code actually work?
+*Does the code actually work?*
 
+.. code-block::text
 
     source <YOURVIRTUALENV>/bin/activate
     (myenv) $ pip install -r requirements_test.txt
