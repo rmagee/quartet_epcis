@@ -33,7 +33,7 @@ class Event(abstractmodels.EPCISBusinessEvent):
         choices=choices.EVENT_TYPE_CHOICES
     )
     message_id = models.CharField(
-        max_length=50,
+        max_length=100,
         null=False,
         help_text=_('The unique id of the originating message.'),
         verbose_name=_('Message ID')

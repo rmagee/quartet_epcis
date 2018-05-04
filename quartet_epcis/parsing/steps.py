@@ -16,6 +16,24 @@ import io
 from quartet_capture.rules import Step
 from quartet_epcis.parsing.parser import QuartetParser
 from django.core.files.base import File
+from quartet_capture.models import Rule, Step
+
+def create_rule(apps, schema_editor):
+    '''
+    Creates the default rule.  Used in data-migrations.
+    :return: None
+    '''
+    rule = Rule.objects.create(
+        name='EPCIS',
+        description='Auto-Created EPCIS Parsing Rule.',
+    )
+    Step.objects.create(
+        name='Parse XML',
+        description='Parse EPCIS data and save to database.',
+        step_class='quartet_epcis.parsing.steps.EPCISParsingStep',
+        order=1,
+        rule=rule
+    )
 
 
 class EPCISParsingStep(Step):

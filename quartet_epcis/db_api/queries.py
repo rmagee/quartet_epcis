@@ -107,7 +107,9 @@ class EPCISDBProxy:
         :return: A list of EPCPyEvents
         '''
         args = {'identifier': epc} if epc else {'id': epc_pk}
-        event_entries = entries.EntryEvent.objects.select_related(
+        event_entries = entries.EntryEvent.objects.order_by(
+            'event__event_time'
+        ).select_related(
             'event'
         ).prefetch_related(
             'event__transformationid_set',

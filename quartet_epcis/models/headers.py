@@ -201,7 +201,7 @@ class DocumentIdentification(models.Model):
         default='1.0'
     )
     instance_identifier = models.CharField(
-        max_length=40,
+        max_length=100,
         null=False,
         help_text=_('Descriptor which contains reference information '
                     'which uniquely identifies this instance of the SBD '
