@@ -8,15 +8,11 @@ History
 
 * First release on PyPI.
 
-1.0.+ (2018-16-04)
+1.0.+ May 4, 2018
 ++++++++++++++++++
 
 * First production-ready release.
 * CI build to auto-deploy tags to PyPI
-
-1.1+ May 4, 2018
-++++++++++++++++
-
 * Longer fields for document and event ids.
 * Changes to CI build.
 * Data migration to automatically create EPCIS rule and Step.
