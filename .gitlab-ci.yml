@@ -52,7 +52,7 @@ pages:
         paths:
         - public
     only:
-      - master
+      - tags
 
 deploy_pypi:
   image: seriallab/python3.6dev
@@ -69,6 +69,5 @@ deploy_pypi:
     - python setup.py check sdist bdist_wheel upload
     - rm ~/.pypirc
   only:
-    - master
     - tags
     #- /\d+\.\d+\.\d+([abc]\d*)?$/
