@@ -143,6 +143,8 @@ class EPCISDBProxy:
         else:
             ret = None
         # proxy out the call to the specific function
+        if ret:
+            ret.id = db_event.id
         return ret
 
     def get_events_by_ilmd(self, name, value):
