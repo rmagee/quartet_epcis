@@ -17,6 +17,8 @@ History
 * Changes to CI build.
 * Data migration to automatically create EPCIS rule and Step.
 
-1.0.4
-+++++
-* EPCISParsingStep in the steps module was of wrong Type...but was working anyway.  Switched to `rule.Step` from `models.Step`.
+1.0.4 June 6, 2018
+++++++++++++++++++
+
+* EPCISParsingStep in the steps module was of wrong Type...but was working
+anyway.  Switched to `rule.Step` from `models.Step`.
