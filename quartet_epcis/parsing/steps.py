@@ -13,7 +13,7 @@
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import io
-from quartet_capture.rules import Step
+from quartet_capture.rules import Step as RuleStep
 from quartet_epcis.parsing.parser import QuartetParser
 from django.core.files.base import File
 from quartet_capture.models import Rule, Step
@@ -36,7 +36,7 @@ def create_rule(apps, schema_editor):
     )
 
 
-class EPCISParsingStep(Step):
+class EPCISParsingStep(RuleStep):
     '''
     Calls the EPCIS parser as a rules.Step that can be used in the
     quartet_capture rule engine.
