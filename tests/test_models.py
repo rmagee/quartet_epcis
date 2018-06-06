@@ -16,6 +16,7 @@ from django.test import TestCase
 from EPCPyYes.core.v1_2.CBV import business_steps, business_transactions, \
     dispositions
 from EPCPyYes.core.v1_2.events import Action
+from quartet_capture import models
 from quartet_epcis.parsing.parser import QuartetParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices
@@ -43,7 +44,8 @@ class TestQuartet(TestCase):
 
     def test_a_epcis_step(self):
         curpath = os.path.dirname(__file__)
-        step = EPCISParsingStep()
+        db_task = self._create_task()
+        step = EPCISParsingStep(db_task)
         with open(os.path.join(curpath, 'data/epcis.xml')) as f:
             step.execute(f.read(),{})
         self.confirm_parents()
@@ -51,6 +53,32 @@ class TestQuartet(TestCase):
         self.confirm_transaction_event()
         self.confirm_object_event()
         self.confirm_transformation_event()
+
+    def _create_task(self):
+        db_task = models.Task()
+        db_task.status = 'QUEUED'
+        db_task.name = 'test'
+        db_task.rule = self._create_rule()
+        db_task.save()
+        return db_task
+
+    def _create_rule(self):
+        db_rule = models.Rule()
+        db_rule.name = 'epcis'
+        db_rule.description = 'EPCIS Parsing rule utilizing quartet_epcis.'
+        db_rule.save()
+        rp = models.RuleParameter(name='test name', value='test value',
+                                  rule=db_rule)
+        rp.save()
+        # create a new step
+        epcis_step = models.Step()
+        epcis_step.name = 'parse-epcis'
+        epcis_step.description = 'Parse the EPCIS data and store in database.'
+        epcis_step.order = 1
+        epcis_step.step_class = 'quartet_epcis.parsing.steps.EPCISParsingStep'
+        epcis_step.rule = db_rule
+        epcis_step.save()
+        return db_rule
 
     def confirm_parents(self):
         '''
