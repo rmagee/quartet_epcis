@@ -22,3 +22,8 @@ History
 
 * EPCISParsingStep in the steps module was of wrong Type...but was working
 anyway.  Switched to `rule.Step` from `models.Step`.
+
+1.0.5 June 8, 2018
+++++++++++++++++++
+* Added on_failure to the EPCISParsingStep to account for the new abstract
+method on the base `quartet_capture.rules.Step` class.

@@ -41,8 +41,9 @@ class EPCISParsingStep(RuleStep):
     Calls the EPCIS parser as a rules.Step that can be used in the
     quartet_capture rule engine.
     '''
+    @property
     def declared_parameters(self):
-        return {}
+        return self._declared_parameters
 
     def execute(self, data, rule_context: dict):
         try:
@@ -53,3 +54,7 @@ class EPCISParsingStep(RuleStep):
         except TypeError:
             parser = QuartetParser(io.BytesIO(data.encode()))
         parser.parse()
+
+    def on_failure(self):
+        pass
+
