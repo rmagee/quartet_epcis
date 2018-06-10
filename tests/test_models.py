@@ -17,6 +17,7 @@ from EPCPyYes.core.v1_2.CBV import business_steps, business_transactions, \
     dispositions
 from EPCPyYes.core.v1_2.events import Action
 from quartet_capture import models
+from quartet_capture.rules import RuleContext
 from quartet_epcis.parsing.parser import QuartetParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices
@@ -45,7 +46,8 @@ class TestQuartet(TestCase):
     def test_a_epcis_step(self):
         curpath = os.path.dirname(__file__)
         db_task = self._create_task()
-        step = EPCISParsingStep(db_task)
+        context = RuleContext('epcis')
+        step = EPCISParsingStep(db_task, context)
         with open(os.path.join(curpath, 'data/epcis.xml')) as f:
             step.execute(f.read(),{})
         self.confirm_parents()
