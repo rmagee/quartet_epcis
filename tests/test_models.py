@@ -47,9 +47,9 @@ class TestQuartet(TestCase):
         curpath = os.path.dirname(__file__)
         db_task = self._create_task()
         context = RuleContext('epcis')
-        step = EPCISParsingStep(db_task, context)
+        step = EPCISParsingStep(db_task)
         with open(os.path.join(curpath, 'data/epcis.xml')) as f:
-            step.execute(f.read(),{})
+            step.execute(f.read(),context)
         self.confirm_parents()
         self.confirm_agg_event()
         self.confirm_transaction_event()
