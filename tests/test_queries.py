@@ -14,7 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import os
 from django.test import TestCase
-from quartet_epcis.models import events, choices, headers
+from quartet_epcis.models import events, choices, headers, entries
 from quartet_epcis.db_api import queries
 from quartet_epcis.parsing.parser import QuartetParser
 
@@ -105,6 +105,10 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.destination_list), 2)
         self.assertEqual(len(event.child_epcs), 5)
         self.assertEqual(event.parent_id, 'urn:epc:id:sgtin:305555.3555555.1')
+        # see if we can get the entries that have this event as their
+        # last event
+        e = entries.Entry.objects.filter(last_aggregation_event=ae[0])
+        self.assertEqual(e.count(), 5)
         print(event.render())
 
     def test_get_events_by_epc(self):
@@ -144,10 +148,10 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.ilmd), 2)
         print(event.render())
 
-    def _parse_test_data(self):
+    def _parse_test_data(self, test_file='data/epcis.xml'):
         curpath = os.path.dirname(__file__)
         parser = QuartetParser(
-            os.path.join(curpath, 'data/epcis.xml')
+            os.path.join(curpath, test_file)
         )
         message_id = parser.parse()
         print(parser.event_cache)
