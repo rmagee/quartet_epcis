@@ -19,6 +19,7 @@ from quartet_epcis.models import events, entries, choices, headers
 from EPCPyYes.core.v1_2 import events as yes_events
 from EPCPyYes.core.SBDH import template_sbdh
 from django.db import transaction
+from django.utils.translation import ugettext as _
 
 logger = logging.getLogger('quartet_epcis')
 biz_xact_list = List[yes_events.BusinessTransaction]
@@ -110,7 +111,6 @@ class QuartetParser(EPCISParser):
                 logger.debug('Adding partner to the sbdh model instance.')
         [p.save() for p in partner_cache]
 
-
     def handle_transaction_event(
         self,
         epcis_event: yes_events.TransactionEvent
@@ -125,7 +125,7 @@ class QuartetParser(EPCISParser):
         logger.debug('Handling a transaction event.')
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.TRANSACTION.value
-        self.handle_entries(db_event, epcis_event.epc_list)
+        self.handle_entries(db_event, epcis_event.epc_list, epcis_event)
         if epcis_event.parent_id:
             self.handle_top_level_id(epcis_event.parent_id, db_event)
         self.handle_common_elements(db_event, epcis_event)
@@ -150,6 +150,7 @@ class QuartetParser(EPCISParser):
 
         entryevent = entries.EntryEvent(entry=entry,
                                         event=db_event,
+                                        event_time=db_event.event_time,
                                         identifier=top_id,
                                         is_parent=True)
         self.entry_event_cache.append(entryevent)
@@ -167,7 +168,7 @@ class QuartetParser(EPCISParser):
         logger.debug('Handling ann aggregation event.')
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
-        self.handle_entries(db_event, epcis_event.child_epcs)
+        self.handle_entries(db_event, epcis_event.child_epcs, epcis_event)
         self.handle_common_elements(db_event, epcis_event)
         self.handle_top_level_id(epcis_event.parent_id, db_event)
         self.event_cache.append(db_event)
@@ -183,7 +184,7 @@ class QuartetParser(EPCISParser):
         logger.debug('Handling an ObjectEvent...')
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.OBJECT.value
-        self.handle_entries(db_event, epcis_event.epc_list)
+        self.handle_entries(db_event, epcis_event.epc_list, epcis_event)
         self.handle_common_elements(db_event, epcis_event)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
         self.event_cache.append(db_event)
@@ -202,8 +203,8 @@ class QuartetParser(EPCISParser):
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.TRANSFORMATION.value
         self.handle_common_elements(db_event, epcis_event)
-        self.handle_entries(db_event, epcis_event.input_epc_list)
-        self.handle_entries(db_event, epcis_event.output_epc_list,
+        self.handle_entries(db_event, epcis_event.input_epc_list, epcis_event)
+        self.handle_entries(db_event, epcis_event.output_epc_list, epcis_event,
                             output=True)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
         self.event_cache.append(db_event)
@@ -281,7 +282,7 @@ class QuartetParser(EPCISParser):
         return db_event
 
     def handle_entries(
-        self, db_event: str, epc_list: [],
+        self, db_event: events.Event, epc_list: [], epcis_event,
         output: bool = False
     ):
         '''
@@ -294,11 +295,25 @@ class QuartetParser(EPCISParser):
         '''
         logging.debug('Processing epc list %s', epc_list)
         for epc in epc_list:
+            created = False
             entry = self.entry_cache.get(epc)
             if not entry:
-                entry = entries.Entry.objects.get_or_create(identifier=epc)[0]
-                self.entry_cache[entry.identifier] = entry
+                entry, created = \
+                    entries.Entry.objects.get_or_create(identifier=epc)
+            if not created and epcis_event.event_time < entry.last_event_time:
+                raise self.EventOrderException(_(
+                    'An event was received which was temporally '
+                    'out of order.  Event ID: %s' % epcis_event.event_id
+                ))
+            entry.last_event = db_event
+            entry.last_event_time = epcis_event.event_time
+            if db_event.type == choices.EventTypeChoicesEnum.AGGREGATION.value:
+                entry.last_aggregation_event = db_event
+            entry.save()
+            self.entry_cache[entry.identifier] = entry
+
             entryevent = entries.EntryEvent(entry=entry,
+                                            event_time=epcis_event.event_time,
                                             event=db_event,
                                             identifier=epc,
                                             output=output)
@@ -484,3 +499,6 @@ class QuartetParser(EPCISParser):
             del self.destination_cache[:]
             del self.source_event_cache[:]
             del self.destination_event_cache[:]
+
+    class EventOrderException(Exception):
+        pass
