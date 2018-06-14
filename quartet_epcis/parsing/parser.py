@@ -151,6 +151,7 @@ class QuartetParser(EPCISParser):
         entryevent = entries.EntryEvent(entry=entry,
                                         event=db_event,
                                         event_time=db_event.event_time,
+                                        event_type=db_event.type,
                                         identifier=top_id,
                                         is_parent=True)
         self.entry_event_cache.append(entryevent)
@@ -282,7 +283,7 @@ class QuartetParser(EPCISParser):
         return db_event
 
     def handle_entries(
-        self, db_event: events.Event, epc_list: [], epcis_event,
+        self, db_event: events.Event, epc_list: [], epcis_event: yes_events.EPCISEvent,
         output: bool = False
     ):
         '''
@@ -300,24 +301,46 @@ class QuartetParser(EPCISParser):
             if not entry:
                 entry, created = \
                     entries.Entry.objects.get_or_create(identifier=epc)
-            if not created and epcis_event.event_time < entry.last_event_time:
+            # if an event is out of order but not an observation then throw
+            # an out of order exception
+            if not created and epcis_event.event_time < entry.last_event_time\
+                and db_event.action != yes_events.Action.observe.value:
                 raise self.EventOrderException(_(
                     'An event was received which was temporally '
                     'out of order.  Event ID: %s' % epcis_event.event_id
                 ))
+            # set the last event pointers
             entry.last_event = db_event
             entry.last_event_time = epcis_event.event_time
-            if db_event.type == choices.EventTypeChoicesEnum.AGGREGATION.value:
-                entry.last_aggregation_event = db_event
+            entry.last_disposition = epcis_event.disposition
+            # if this is an aggregation event and is not an observation then
+            # mark the last agg event pointer and envent type.
+            self._check_for_aggregation(db_event, entry, epcis_event)
             entry.save()
             self.entry_cache[entry.identifier] = entry
-
             entryevent = entries.EntryEvent(entry=entry,
                                             event_time=epcis_event.event_time,
+                                            event_type=db_event.type,
                                             event=db_event,
                                             identifier=epc,
                                             output=output)
             self.entry_event_cache.append(entryevent)
+
+    def _check_for_aggregation(self, db_event, entry, epcis_event):
+        '''
+        Looks for any aggregation event that is of type ADD or DELETE and
+        marks the entry record with the event time, action and Event model
+        foreign key.
+        :param db_event: The database Event model.
+        :param entry: The new Entry instance.
+        :param epcis_event: The EPCPyYes event that is being analyzed.
+        :return: None.
+        '''
+        if db_event.type == choices.EventTypeChoicesEnum.AGGREGATION.value \
+            and db_event.action != yes_events.Action.observe.value:
+            entry.last_aggregation_event = db_event
+            entry.last_aggregation_event_time = epcis_event.event_time
+            entry.last_aggregation_event_action = epcis_event.action
 
     def handle_error_declaration(
         self,
@@ -446,7 +469,7 @@ class QuartetParser(EPCISParser):
 
     def clear_cache(self):
         '''
-        Calls save on all items in the cache
+        Calls save on all items in all of the caches.
         '''
         with transaction.atomic():
             logger.debug('Clear cache has been called with %s and %i '

@@ -77,7 +77,7 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.business_transaction_list), 1)
         self.assertEqual(len(event.source_list), 2)
         self.assertEqual(len(event.destination_list), 2)
-        self.assertEqual(len(event.epc_list), 5)
+        self.assertEqual(len(event.epc_list), 6)
         self.assertEqual(len(event.ilmd), 2)
         print(event.render())
 

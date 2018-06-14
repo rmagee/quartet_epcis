@@ -46,11 +46,10 @@
     <EPCISBody>
         <EventList>
             <ObjectEvent>
-                <eventTime>2018-01-22T22:51:49.294565+00:00</eventTime>
-                <recordTime>2018-01-22T22:51:49.294565+00:00</recordTime>
+                <eventTime>2018-01-22T22:52:49.294565+00:00</eventTime>
+                <recordTime>2018-01-22T22:52:49.294565+00:00</recordTime>
                 <eventTimeZoneOffset>+00:00</eventTimeZoneOffset>
                 <epcList>
-                    <epc>urn:epc:id:sgtin:305555.3555555.1</epc>
                     <epc>urn:epc:id:sgtin:305555.0555555.1</epc>
                     <epc>urn:epc:id:sgtin:305555.0555555.2</epc>
                     <epc>urn:epc:id:sgtin:305555.0555555.3</epc>

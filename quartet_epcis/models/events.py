@@ -39,6 +39,10 @@ class Event(abstractmodels.EPCISBusinessEvent):
         verbose_name=_('Message ID')
     )
 
+    def __str__(self):
+        "{0}: {1}:{2}".format(self.type, self.action,
+                              self.event_time.isoformat())
+
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Event')

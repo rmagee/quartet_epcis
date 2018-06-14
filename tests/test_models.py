@@ -91,7 +91,7 @@ class TestQuartet(TestCase):
         self.assertEqual(res.count(), 2, 'There should only be '
                                          'two parent entryevents.')
         logger.debug('Parent count checks out.')
-        self.confirm_two_parents()
+        self.confirm_three_parents()
 
     def confirm_object_event(self):
         item = entries.Entry.objects.get(
@@ -111,8 +111,8 @@ class TestQuartet(TestCase):
         serials = entries.EntryEvent.objects.filter(
             event_id=event.id
         )
-        self.assertEqual(serials.count(), 5,
-                         'There should be five entry events'
+        self.assertEqual(serials.count(), 6,
+                         'There should be six entry events'
                          'for this event id.')
         self.check_sglns(event)
         self.get_biz_transactions(event)
@@ -288,12 +288,13 @@ class TestQuartet(TestCase):
             destination='urn:epc:id:sgln:309999.111111.233'
         )
 
-    def confirm_two_parents(self):
+    def confirm_three_parents(self):
         entry = entries.Entry.objects.get(
             identifier='urn:epc:id:sgtin:305555.3555555.1',
         )
         events = entries.EntryEvent.objects.filter(entry_id=entry.id)
-        self.assertEqual(events.count(), 2)
+        # there is a third event for commissioning.
+        self.assertEqual(events.count(), 3)
 
     def confirm_business_step(self, event_id, business_step):
         pass
