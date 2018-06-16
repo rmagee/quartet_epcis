@@ -90,6 +90,8 @@ class TestQuartet(TestCase):
         res = entries.EntryEvent.objects.filter(is_parent=True)
         self.assertEqual(res.count(), 2, 'There should only be '
                                          'two parent entryevents.')
+        for entry_event in res:
+            logger.debug("Entry event __str__ check %s", entry_event)
         logger.debug('Parent count checks out.')
         self.confirm_three_parents()
 
@@ -97,6 +99,7 @@ class TestQuartet(TestCase):
         item = entries.Entry.objects.get(
             identifier='urn:epc:id:sgtin:305555.0555555.1',
         )
+        logger.debug('Entry __str__ check %s', item)
         entry_events = entries.EntryEvent.objects.filter(
             identifier=item.identifier
         ).values_list('event_id')

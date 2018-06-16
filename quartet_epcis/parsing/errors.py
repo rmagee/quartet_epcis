@@ -16,7 +16,10 @@
 
 class BaseEPCISError(Exception):
     def __init__(self, *args: object, **kwargs: object) -> None:
-        message = args[0] % args[:1]
+        if len(args) > 1:
+            message = args[0] % tuple(args[1:])
+        else:
+            message = args[0]
         super().__init__(message, **kwargs)
 
 
@@ -26,5 +29,10 @@ class InvalidAggregationEventError(BaseEPCISError):
 
 
 class EntryException(BaseEPCISError):
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+
+
+class DecommissionedEntryException(BaseEPCISError):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)

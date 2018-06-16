@@ -94,10 +94,10 @@ class BusinessEPCISParser(QuartetParser):
             # the count should be the same in the event and queryset
             if not count == len(epcis_event.child_epcs):
                 raise errors.InvalidAggregationEventError(
-                    'The aggregation event with id %s contained children '
-                    'in the child_epc list that were either '
-                    'never commissioned, decommissioned '
-                    'or already in another aggregation.',
+                    _('The aggregation event with id %s contained children '
+                      'in the child_epc list that were either '
+                      'never commissioned, decommissioned '
+                      'or already in another aggregation.'),
                     epcis_event.id
                 )
             else:
@@ -111,8 +111,8 @@ class BusinessEPCISParser(QuartetParser):
                     )
                 except entries.Entry.DoesNotExist:
                     raise errors.InvalidAggregationEventError(
-                        'The parent epc %s was either never commissioned or'
-                        'was decommissioned.'
+                        _('The parent epc %s was either never commissioned or'
+                          'was decommissioned.')
                     )
                 self._update_aggregation_entries(db_entries, parent, db_event,
                                                  epcis_event)
@@ -182,7 +182,10 @@ class BusinessEPCISParser(QuartetParser):
                 db_entry.last_aggregation_event_time = epcis_event.event_time
                 db_entry.last_aggregation_event = db_event
                 db_entry.last_aggregation_event_action = epcis_event.action
-                db_entry.top_id = parent.top_id or parent
+                if parent:
+                    db_entry.top_id = parent.top_id or parent
+                else:
+                    db_entry.top_id = parent
                 db_entry.last_event = db_event
                 db_entry.last_event_time = epcis_event.event_time
                 db_entry.last_disposition = epcis_event.disposition
@@ -192,7 +195,7 @@ class BusinessEPCISParser(QuartetParser):
             # update the database
             count = db_entries.update(
                 parent_id=parent,
-                top_id=parent.top_id or parent,
+                top_id=parent.top_id or parent if parent else parent,
                 last_aggregation_event=db_event,
                 last_aggregation_event_time=epcis_event.event_time,
                 last_aggregation_event_action=epcis_event.action,
@@ -201,7 +204,9 @@ class BusinessEPCISParser(QuartetParser):
                 last_disposition=epcis_event.disposition
             )
             if count == 0:
-                raise errors.EntryException('No Entry records were updated.')
+                raise errors.EntryException(
+                    _('No Entry records were updated.')
+                )
             # then update the local cache if the db update was successful
             for entry in db_entries:
                 self.entry_cache[entry.identifier] = entry
@@ -236,7 +241,9 @@ class BusinessEPCISParser(QuartetParser):
                 last_disposition=epcis_event.disposition
             )
             if count == 0:
-                raise errors.EntryException('No Entry records were updated.')
+                raise errors.EntryException(
+                    _('No Entry records were updated.')
+                )
             # then update the local cache if the db update was successful
             for entry in db_entries:
                 self.entry_cache[entry.identifier] = entry
@@ -255,31 +262,15 @@ class BusinessEPCISParser(QuartetParser):
         :return: An Entry model instance updated to reflect the current
         event being processed.
         '''
-        # check the cache
-        entry = self.entry_cache.get(
-            epcis_event.parent_id,
-            None,
-        )
-        if entry.decommissioned:
-            raise errors.InvalidAggregationEventError(
-                "The parent id %s for this event has been decommissioned.",
-                epcis_event.parent_id
+        # check the cache or get from the db
+        try:
+            entry = self._get_entry(epcis_event.parent_id)
+        except errors.EntryException:
+            raise errors.EntryException(
+                _('The parent entry with identifer %s was either '
+                  'decommissioned or was never commissioned.'),
+                  epcis_event.parent_id
             )
-        # not in the cache then get and put in the cache
-        # since this is an agg event then the entry must already exist
-        if not entry:
-            try:
-                entry = entries.Entry.objects.get(
-                    identifier=epcis_event.parent_id,
-                    decomissioned=False
-                )
-                self.entry_cache[entry.identifier] = entry
-            except entries.Entry.DoesNotExist:
-                raise errors.InvalidAggregationEventError(
-                    "The parent id %s has not been commissioned and/or does"
-                    "not exist in the database.  Therefor is invalid in the "
-                    "context of an aggregation event."
-                )
         # set all the pointers and convienince properties on the entry
         entry.last_aggregation_event_action = epcis_event.action
         entry.last_aggregation_event_time = epcis_event.event_time
@@ -307,14 +298,20 @@ class BusinessEPCISParser(QuartetParser):
 
     def _handle_delete_action(self, db_event: db_events.Event,
                               epcis_event: events.AggregationEvent):
-        pass
         # 1. see if there is a parent and children
         # if parent and children then set the parent and top of the children
         # to none
+        if epcis_event.parent_id and len(epcis_event.child_epcs) > 0:
+            # ok, we have parent and children
+            db_entries = self._get_entries(
+                epcis_event.child_epcs
+            )
+        else:
+            db_entries = db_proxy.get_entries_by_parent(epcis_event.parent_id)
 
-        # 2. if there is a parent and no children that means we remove all
-        # children from the parent item per section 7.4.3 of the EPCIS 1.2
-        # spec.
+        self._update_aggregation_entries(
+            db_entries, None, db_event, epcis_event
+        )
 
     def _get_entry(self, epc: str):
         '''
@@ -326,29 +323,26 @@ class BusinessEPCISParser(QuartetParser):
         '''
         entry = self.entry_cache.get(epc)
         if not entry:
-            entry = entries.Entry.objects.get(
-                identifer=epc,
-                decommissioned=False
-            )
-            # add it to the cache
-            self.entry_cache[epc] = entry
-        return entry
-
-    def _screen_entries(self, entries: EntryList):
-        '''
-        Make sure that any entries that are not part of an EPCIS Agg,
-        Transaction, Transformation or Object event if they have been
-        decomissioned.
-        :param entries:
-        :return:
-        '''
-        for entry in EntryList:
-            if entry.decommissioned:
-                raise errors.DecommissionedEntryException(
-                    _('The entry with identifier %s has been decommissioned'
-                      ' and is not eligible to participate in subsequent '
-                      'events after.', entry.identifier)
+            try:
+                entry = entries.Entry.objects.get(
+                    identifier=epc,
+                    decommissioned=False
                 )
+                # add it to the cache
+                self.entry_cache[epc] = entry
+            except entries.Entry.DoesNotExist:
+                raise errors.EntryException(
+                    _('The entry with identifier %s could '
+                      'not be found.  It was either '
+                      'decommissioned or never commissioned'),
+                    epc
+                )
+        if entry.decommissioned:
+            raise errors.EntryException(
+                _('The entry with %s was decommissioned.'),
+                epc
+            )
+        return entry
 
     def _get_entries(self, epcs: list):
         '''
@@ -394,7 +388,7 @@ class BusinessEPCISParser(QuartetParser):
         else:
             for entry in db_entries:
                 entry.decommissioned = True
-                entry.last_event=db_event
-                entry.last_event_time=epcis_event.event_time
-                entry.last_disposition=epcis_event.disposition
+                entry.last_event = db_event
+                entry.last_event_time = epcis_event.event_time
+                entry.last_disposition = epcis_event.disposition
                 entry.save()

@@ -145,7 +145,10 @@ class QuartetParser(EPCISParser):
         )
         # not in the cache then create and put in the cache
         if not entry:
-            entry = entries.Entry.objects.get_or_create(identifier=top_id)[0]
+            entry = entries.Entry.objects.get_or_create(
+                identifier=top_id,
+                decommissioned=False
+            )[0]
             self.entry_cache[entry.identifier] = entry
 
         entryevent = entries.EntryEvent(entry=entry,
@@ -283,7 +286,8 @@ class QuartetParser(EPCISParser):
         return db_event
 
     def handle_entries(
-        self, db_event: events.Event, epc_list: [], epcis_event: yes_events.EPCISEvent,
+        self, db_event: events.Event, epc_list: [],
+        epcis_event: yes_events.EPCISEvent,
         output: bool = False
     ):
         '''
@@ -300,10 +304,11 @@ class QuartetParser(EPCISParser):
             entry = self.entry_cache.get(epc)
             if not entry:
                 entry, created = \
-                    entries.Entry.objects.get_or_create(identifier=epc)
+                    entries.Entry.objects.get_or_create(identifier=epc,
+                                                        decommissioned=False)
             # if an event is out of order but not an observation then throw
             # an out of order exception
-            if not created and epcis_event.event_time < entry.last_event_time\
+            if not created and epcis_event.event_time < entry.last_event_time \
                 and db_event.action != yes_events.Action.observe.value:
                 raise self.EventOrderException(_(
                     'An event was received which was temporally '

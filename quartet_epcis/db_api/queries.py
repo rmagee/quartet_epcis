@@ -541,13 +541,63 @@ class EPCISDBProxy:
             logger.debug('No transformation id was found for event %s',
                          db_event)
 
+    def get_entries_by_parent(self, parent_entry: entries.Entry):
+        '''
+        Returns a queryset containing all child Entries for a parent level
+        entry.
+        :param parent_entry: The parent to retrieve the children for.
+        :return: A queryset of Entry model instances reflecting the children
+        of the parent_entry.
+        '''
+        return entries.Entry.objects.filter(
+            parent_id=parent_entry,
+            decommissioned=False
+        )
+
+    def get_parent_entries(self, epcs: list, select_for_update=True):
+        '''
+        Out of a list of EPCs, will return any that are parents in a QuerySet
+        for update.
+        :param epcs: A list of EPCs to inspect for is_parent=True
+        :param select_for_update: Whether or not to select any parent entries
+        from the database for update in a transaction.
+        :return: Any EPCs that have an is_parent value of True and are not
+        decommissioned.
+        '''
+        if select_for_update:
+            func = entries.Entry.objects.select_for_update().filter
+        else:
+            func = entries.Entry.objects.filter
+        return func(
+            is_parent=True,
+            decommissioned=False,
+        )
+
+    def get_entries_by_epcs(self, epcs: list, select_for_update=True):
+        '''
+        Returns a queryset of Entry model instances that have identifiers
+        correlating to values in the `epcs` list.
+        :param epcs: The epcs to search for.
+        :param select_for_update: Whether or not to select any entries
+        from the database for update in a transaction. Default=True
+        :return: A QuerySet of Entries.
+        '''
+        if select_for_update:
+            func = entries.Entry.objects.select_for_update().filter
+        else:
+            func = entries.Entry.objects.filter
+        return func(
+            identifier__in=epcs,
+            decommissioned=False
+        )
+
     def get_entries_by_event(self, db_event: events.Event):
         '''
         Get's all of the entries (serial numbers) for each event.
         :param db_event: The event to retrieve the numbers for.
         :return: A list of entry serial numbers/epcs.
         '''
-        result = entries.EntryEvent.objects.prefetch_related.get(
+        return entries.EntryEvent.objects.prefetch_related.get(
             event=db_event)
 
     def get_events_by_entry_identifer(self, entry_identifier: str):
