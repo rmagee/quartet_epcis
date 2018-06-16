@@ -7,14 +7,17 @@ QU4RTET EPCIS
 .. image:: https://gitlab.com/serial-lab/quartet_epcis/badges/master/coverage.svg
         :target: https://gitlab.com/serial-lab/quartet_epcis/pipelines
 
-The quartet_epcis python package is a Django application that 
-contains the base database models necessary for the support of 
-EPCIS 1.2 data persistence to an RDBMS. The quartet_epcis.parsing 
-package contains an EPCIS XML parser that will take an input stream 
+.. image:: https://badge.fury.io/py/quartet_epcis.svg
+    :target: https://badge.fury.io/py/quartet_epcis
+
+The quartet_epcis python package is a Django application that
+contains the base database models necessary for the support of
+EPCIS 1.2 data persistence to an RDBMS. The quartet_epcis.parsing
+package contains an EPCIS XML parser that will take an input stream
 of XML data and save it to a configured database back-end.
 
-The quartet_epcis.app_models directory contains a set of 
-Django ORM models that are used to define the database scheme 
+The quartet_epcis.app_models directory contains a set of
+Django ORM models that are used to define the database scheme
 and store EPCIS data in the database.
 
 Documentation
@@ -36,7 +39,7 @@ Install Quartet
 .. code-block::text
 
     pip install quartet_epcis
-    
+
 
 Add it to your `INSTALLED_APPS`:
 
