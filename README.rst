@@ -33,8 +33,8 @@ The full (pre-built )documentation is under the docs directory in this project.
 Quickstart
 ----------
 
-Install Quartet
-+++++++++++++++
+Install QU4RTET EPCIS
++++++++++++++++++++++
 
 .. code-block::text
 
@@ -43,7 +43,7 @@ Install Quartet
 
 Add it to your `INSTALLED_APPS`:
 
-.. code-block::text
+.. code-block:: text
 
     INSTALLED_APPS = (
         ...
@@ -60,8 +60,6 @@ Features
 
 Running The Unit Tests
 ----------------------
-
-*Does the code actually work?*
 
 .. code-block::text
 
