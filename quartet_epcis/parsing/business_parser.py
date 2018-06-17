@@ -89,7 +89,7 @@ class BusinessEPCISParser(QuartetParser):
             # get the entries and make sure none are decomissioned or
             # already packed inside another parent
             # step one- check the cache first!
-            db_entries, count = self._get_entries_for_agggregation(
+            db_entries, count = self._get_entries_for_aggregation(
                 epcis_event.child_epcs)
             # the count should be the same in the event and queryset
             if not count == len(epcis_event.child_epcs):
@@ -105,25 +105,26 @@ class BusinessEPCISParser(QuartetParser):
                 # just check the parent to make sure that the parent is
                 # a valid epc
                 try:
-                    parent = self._handle_aggregation_parent(
-                        db_event,
-                        epcis_event
+                    parent = self._get_entry(
+                        epc=epcis_event.parent_id
                     )
                 except entries.Entry.DoesNotExist:
                     raise errors.InvalidAggregationEventError(
                         _('The parent epc %s was either never commissioned or'
                           'was decommissioned.')
                     )
-                self._update_aggregation_entries(db_entries, parent, db_event,
-                                                 epcis_event)
                 for db_entry in db_entries:
-                    entries.EntryEvent(
+                    entry_event = entries.EntryEvent(
                         entry=db_entry,
                         event_time=epcis_event.event_time,
                         event=db_event,
                         event_type=db_event.type,
                         identifier=db_entry.identifier
                     )
+                    self.entry_event_cache.append(entry_event)
+                self._update_aggregation_entries(db_entries, parent, db_event,
+                                                 epcis_event)
+
 
         elif epcis_event.action == events.Action.delete.value:
             # TODO: check the data and remove the parent if necessary
@@ -132,7 +133,7 @@ class BusinessEPCISParser(QuartetParser):
             self.handle_entries(db_event, epcis_event.child_epcs,
                                 epcis_event.event_time)
 
-    def _get_entries_for_agggregation(self, epcs: list):
+    def _get_entries_for_aggregation(self, epcs: list):
         '''
         Will pull entries first from the local entries cache then, if not
         found, will attempt to get them from the database.
