@@ -14,10 +14,9 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import os
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 from quartet_epcis.db_api.queries import EPCISDBProxy
 from quartet_epcis.models import events, choices, headers, entries
-from quartet_epcis.db_api import queries
 from quartet_epcis.parsing import errors
 from quartet_epcis.parsing.parser import QuartetParser
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
@@ -111,6 +110,21 @@ class BusinessRulesTestCase(TestCase):
                 db_proxy.get_entries_by_parent(entry).count(),
                 5
             )
+        all_child = entries.Entry.objects.filter(
+            top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
+        )
+        ee = entries.EntryEvent.objects.get(
+            identifier='urn:epc:id:sgtin:305555.5555555.1',
+            event_type=choices.EventTypeChoicesEnum.AGGREGATION.value,
+            is_parent=True
+        )
+        self.assertIsNotNone(ee)
+        evs = entries.EntryEvent.objects.filter(
+            entry__in=entries.Entry.objects.all()
+        )
+        # 13 + 6 + 6 + 3 entry events should be stored.
+        self.assertEqual(evs.count(), 28)
+        self.assertEqual(all_child.count(), 12)
 
     def test_uncommissioned_pack(self):
         '''
