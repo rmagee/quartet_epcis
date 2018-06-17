@@ -191,6 +191,10 @@ class BusinessEPCISParser(QuartetParser):
                 db_entry.last_disposition = epcis_event.disposition
                 db_entry.parent_id = parent
                 db_entry.save()
+                if db_entry.is_parent:
+                    self._update_aggregation_entries(
+                        entries.Entry.objects.filter(parent_id=db_entry),
+                        db_entry, db_event, epcis_event)
         elif isinstance(db_entries, QuerySet):
             # update the database
             count = db_entries.update(
@@ -208,8 +212,12 @@ class BusinessEPCISParser(QuartetParser):
                     _('No Entry records were updated.')
                 )
             # then update the local cache if the db update was successful
-            for entry in db_entries:
-                self.entry_cache[entry.identifier] = entry
+            for db_entry in list(db_entries):
+                self.entry_cache[db_entry.identifier] = db_entry
+                if db_entry.is_parent:
+                    self._update_aggregation_entries(
+                        entries.Entry.objects.filter(parent_id=db_entry),
+                        db_entry, db_event, epcis_event)
 
     def _update_event_entries(
         self,
@@ -269,7 +277,7 @@ class BusinessEPCISParser(QuartetParser):
             raise errors.EntryException(
                 _('The parent entry with identifer %s was either '
                   'decommissioned or was never commissioned.'),
-                  epcis_event.parent_id
+                epcis_event.parent_id
             )
         # set all the pointers and convienince properties on the entry
         entry.last_aggregation_event_action = epcis_event.action
