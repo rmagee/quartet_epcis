@@ -133,6 +133,54 @@ class BusinessRulesTestCase(TestCase):
         with self.assertRaises(errors.EntryException):
             self._parse_test_data('data/nested_pack.xml')
 
+    def test_unpack_top(self):
+        '''
+        Will unpack the top level (palet for example) and check
+        that the children and children of children reflect the new top.
+        This also tests an AGG event of DELETE that does not have a
+        childEPCs list.
+        '''
+        # pack it all up
+        self._parse_test_data('data/commission.xml')
+        self._parse_test_data('data/nested_pack.xml')
+        # unpack the top level
+        self._parse_test_data('data/unpack_top.xml')
+        # verify results
+        # entries
+        parent_entries = entries.Entry.objects.filter(
+            identifier__in=[
+                'urn:epc:id:sgtin:305555.3555555.1',
+                'urn:epc:id:sgtin:305555.3555555.2'
+            ],
+            top_id=None
+        )
+        self.assertEqual(parent_entries.count(), 2)
+        # make sure the top count is correct
+        child_entries = entries.Entry.objects.filter(
+            top_id__identifier__in=[
+                'urn:epc:id:sgtin:305555.3555555.1',
+                'urn:epc:id:sgtin:305555.3555555.2'
+            ]
+        )
+        self.assertEqual(child_entries.count(),10)
+        # make sure the parent count is correct
+        child_entries = entries.Entry.objects.filter(
+            parent_id__identifier__in=[
+                'urn:epc:id:sgtin:305555.3555555.1',
+                'urn:epc:id:sgtin:305555.3555555.2'
+            ]
+        )
+        self.assertEqual(child_entries.count(), 10)
+        # make sure the old top now has no children
+        old_entries = entries.Entry.objects.filter(
+            top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
+        )
+        self.assertEqual(old_entries.count(), 0)
+        evs = entries.EntryEvent.objects.filter(
+            entry__in=entries.Entry.objects.all()
+        )
+        self.assertEqual(evs.count(), 29)
+
     def test_bad_parent(self):
         '''
         Tries to pack some valid entries into a parent id that was never

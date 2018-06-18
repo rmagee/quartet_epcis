@@ -113,15 +113,7 @@ class BusinessEPCISParser(QuartetParser):
                         _('The parent epc %s was either never commissioned or'
                           'was decommissioned.')
                     )
-                for db_entry in db_entries:
-                    entry_event = entries.EntryEvent(
-                        entry=db_entry,
-                        event_time=epcis_event.event_time,
-                        event=db_event,
-                        event_type=db_event.type,
-                        identifier=db_entry.identifier
-                    )
-                    self.entry_event_cache.append(entry_event)
+                self.create_entry_events(db_entries, db_event, epcis_event)
                 self._update_aggregation_entries(db_entries, parent, db_event,
                                                  epcis_event)
 
@@ -132,6 +124,26 @@ class BusinessEPCISParser(QuartetParser):
         else:
             self.handle_entries(db_event, epcis_event.child_epcs,
                                 epcis_event.event_time)
+
+    def create_entry_events(self, db_entries, db_event, epcis_event):
+        '''
+        For a list of Entry instance and an Event instance, will create
+        the intersection entity model instances and add them to the
+        entry event cache.
+        :param db_entries: A list of Entry model instances.
+        :param db_event: A events.Event model instance.
+        :param epcis_event: An EPCPyYes event.
+        :return: None
+        '''
+        for db_entry in db_entries:
+            entry_event = entries.EntryEvent(
+                entry=db_entry,
+                event_time=epcis_event.event_time,
+                event=db_event,
+                event_type=db_event.type,
+                identifier=db_entry.identifier
+            )
+            self.entry_event_cache.append(entry_event)
 
     def _get_entries_for_aggregation(self, epcs: list):
         '''
@@ -197,6 +209,15 @@ class BusinessEPCISParser(QuartetParser):
                         entries.Entry.objects.filter(parent_id=db_entry),
                         db_entry, db_event, epcis_event)
         elif isinstance(db_entries, QuerySet):
+            # then update the local cache if the db update was successful
+            for db_entry in list(db_entries):
+                self.entry_cache[db_entry.identifier] = db_entry
+                if db_entry.is_parent:
+                    # get the children
+                    children = db_proxy.get_entries_by_parent(db_entry)
+                    self._update_aggregation_entries(
+                        children,
+                        db_entry, db_event, epcis_event)
             # update the database
             count = db_entries.update(
                 parent_id=parent,
@@ -212,13 +233,6 @@ class BusinessEPCISParser(QuartetParser):
                 raise errors.EntryException(
                     _('No Entry records were updated.')
                 )
-            # then update the local cache if the db update was successful
-            for db_entry in list(db_entries):
-                self.entry_cache[db_entry.identifier] = db_entry
-                if db_entry.is_parent:
-                    self._update_aggregation_entries(
-                        entries.Entry.objects.filter(parent_id=db_entry),
-                        db_entry, db_event, epcis_event)
 
     def _update_event_entries(
         self,
@@ -315,8 +329,25 @@ class BusinessEPCISParser(QuartetParser):
             db_entries = self._get_entries(
                 epcis_event.child_epcs
             )
+            self.create_entry_events(db_entries, db_event, epcis_event)
         else:
             db_entries = db_proxy.get_entries_by_parent(epcis_event.parent_id)
+            # clear out any entries that have these as top_id
+            lower_entries = db_proxy.get_entries_by_top(
+                self._get_entry(epcis_event.parent_id)
+            )
+            lower_entries.update(
+                top_id=None
+            )
+            entryevent = entries.EntryEvent(
+                entry=self._get_entry(epcis_event.parent_id),
+                event=db_event,
+                event_time=epcis_event.event_time,
+                event_type=db_event.type,
+                identifier=epcis_event.parent_id,
+                is_parent=True
+            )
+            self.entry_event_cache.append(entryevent)
 
         self._update_aggregation_entries(
             db_entries, None, db_event, epcis_event
