@@ -65,7 +65,23 @@ class BusinessRulesTestCase(TestCase):
         with self.assertRaises(errors.InvalidAggregationEventError):
             self._parse_test_data(test_file='data/bad_repack.xml')
 
-    def test_decommission(self):
+    def test_recursive_decommission(self):
+        '''
+        Decommissions just the parent and the parser finds and decommissions
+        the six child entries and then verifies.
+        :return:
+        '''
+        # commission the items
+        self._parse_test_data()
+        # decommission the items
+        self._parse_test_data('data/recursive_decommission.xml')
+        # verify
+        db_entries = entries.Entry.objects.filter(
+            decommissioned=True
+        )
+        self.assertEqual(db_entries.count(), 6)
+
+    def test_flat_decommission(self):
         '''
         Decommissions six entries and then verifies.
         :return:
@@ -73,7 +89,8 @@ class BusinessRulesTestCase(TestCase):
         # commission the items
         self._parse_test_data()
         # decommission the items
-        self._parse_test_data('data/decommission.xml')
+        self._parse_test_data('data/decommission.xml',
+                              recursive_decommission=False)
         # verify
         db_entries = entries.Entry.objects.filter(
             identifier__in=[
@@ -86,7 +103,17 @@ class BusinessRulesTestCase(TestCase):
             ],
             decommissioned=True
         )
-        self.assertEqual(db_entries.count(), 6)
+        self.assertEqual(db_entries.count(), 5)
+        db_entries = db_proxy.get_entries_by_parent_identifier(
+            'urn:epc:id:sgtin:305555.3555555.1',
+            select_for_update=False
+        )
+        self.assertEqual(
+            db_entries.count(),
+            0,
+            'There should be no child entries since'
+            ' they have all been decommissioned.'
+        )
 
     def test_nested_pack(self):
         '''
@@ -163,7 +190,7 @@ class BusinessRulesTestCase(TestCase):
                 'urn:epc:id:sgtin:305555.3555555.2'
             ]
         )
-        self.assertEqual(child_entries.count(),10)
+        self.assertEqual(child_entries.count(), 10)
         # make sure the parent count is correct
         child_entries = entries.Entry.objects.filter(
             parent_id__identifier__in=[
@@ -182,25 +209,24 @@ class BusinessRulesTestCase(TestCase):
         )
         self.assertEqual(evs.count(), 29)
 
-    # def test_pack_top_in_new_top(self):
-    #     '''
-    #     Packs a top level into a new top level and checks to make sure
-    #     the hierarchy is adjusted accordingly.
-    #     '''
-    #     # pack it all up
-    #     self._parse_test_data('data/commission.xml')
-    #     self._parse_test_data('data/nested_pack.xml')
-    #     entry_count = entries.Entry.objects.filter(
-    #         top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
-    #     ).count()
-    #     self.assertEqual(entry_count, 12)
-    #     self._parse_test_data('data/top_in_new_top.xml')
-    #     # verify
-    #     entry_count = entries.Entry.objects.filter(
-    #         top_id__identifier='urn:epc:id:sgtin:305555.5555555.2'
-    #     ).count()
-    #     self.assertEqual(entry_count,13)
-
+    def test_pack_top_in_new_top(self):
+        '''
+        Packs a top level into a new top level and checks to make sure
+        the hierarchy is adjusted accordingly.
+        '''
+        # pack it all up
+        self._parse_test_data('data/commission.xml')
+        self._parse_test_data('data/nested_pack.xml')
+        entry_count = entries.Entry.objects.filter(
+            top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
+        ).count()
+        self.assertEqual(entry_count, 12)
+        self._parse_test_data('data/top_in_new_top.xml')
+        # verify
+        entry_count = entries.Entry.objects.filter(
+            top_id__identifier='urn:epc:id:sgtin:305555.5555555.2'
+        ).count()
+        self.assertEqual(entry_count, 13)
 
     def test_bad_parent(self):
         '''
@@ -230,11 +256,18 @@ class BusinessRulesTestCase(TestCase):
         self._parse_test_data('data/repack_item.xml')
 
     def _parse_test_data(self, test_file='data/epcis.xml',
-                         parser_type=BusinessEPCISParser):
+                         parser_type=BusinessEPCISParser,
+                         recursive_decommission=False):
         curpath = os.path.dirname(__file__)
-        parser = parser_type(
-            os.path.join(curpath, test_file)
-        )
+        if isinstance(parser_type, BusinessEPCISParser):
+            parser = parser_type(
+                os.path.join(curpath, test_file),
+                recursive_decommission=recursive_decommission
+            )
+        else:
+            parser = parser_type(
+                os.path.join(curpath, test_file),
+            )
         message_id = parser.parse()
         print(parser.event_cache)
         parser.clear_cache()
