@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import logging
+from typing import List
 from django.db.models import Q
 from django.utils.translation import ugettext as _
 from EPCPyYes.core.v1_2 import template_events, events as pyyes_events
@@ -22,6 +23,8 @@ from quartet_epcis.models.choices import EventTypeChoicesEnum
 from quartet_epcis.models import events, entries, headers
 
 logger = logging.getLogger(__name__)
+
+EntryList = List[entries.Entry]
 
 
 def get_sources(db_event: events.Event):
@@ -98,6 +101,20 @@ class EPCISDBProxy:
             elif isinstance(event, pyyes_events.AggregationEvent):
                 document.aggregation_events.append(event)
         return document
+
+    def get_entries_by_parent_identifier(self, identifier:str,
+                                         select_for_update=True):
+        '''
+        Returns a QuerySet of entries based on the incoming identifier
+        of the parent.
+        :param identifier: The identifier field of the parent Entry.
+        :return: A QuerySet of Entry model instances.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            parent_id__identifier=identifier,
+            decommissioned=False
+        )
 
     def get_events_by_epc(self, epc: str = None, epc_pk: str = None):
         '''
@@ -541,7 +558,8 @@ class EPCISDBProxy:
             logger.debug('No transformation id was found for event %s',
                          db_event)
 
-    def get_entries_by_parent(self, parent_entry: entries.Entry):
+    def get_entries_by_parent(self, parent_entry: entries.Entry,
+                              select_for_update=True):
         '''
         Returns a queryset containing all child Entries for a parent level
         entry.
@@ -561,12 +579,39 @@ class EPCISDBProxy:
         :param top_entry: The top-level Entry instance.
         :return: A QuerySet of Entry instances.
         '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            top_id=top_entry,
+            decommissioned=False
+        )
+
+    def _update_or_filter(self, select_for_update):
+        '''
+        Returns a function pointer to select for update filter or the
+        regular filter function on the QuerySet of the Entry database
+        model.
+        :param select_for_update:
+        :return:
+        '''
         if select_for_update:
             func = entries.Entry.objects.select_for_update().filter
         else:
             func = entries.Entry.objects.filter
+        return func
+
+    def get_entries_by_parents(self, parents: EntryList,
+                               select_for_update=True):
+        '''
+        Returns a list of entries that are children if the inbound parent
+        list.
+        :param parents: The parent ids to find children for.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instance selected for update by the database.
+        :return: A QuerySet of Entry instances.
+        '''
+        func = self._update_or_filter(select_for_update)
         return func(
-            top_id=top_entry,
+            parent_id__in=parents,
             decommissioned=False
         )
 
@@ -580,10 +625,7 @@ class EPCISDBProxy:
         :return: Any EPCs that have an is_parent value of True and are not
         decommissioned.
         '''
-        if select_for_update:
-            func = entries.Entry.objects.select_for_update().filter
-        else:
-            func = entries.Entry.objects.filter
+        func = self._update_or_filter(select_for_update)
         return func(
             is_parent=True,
             decommissioned=False,
@@ -598,10 +640,7 @@ class EPCISDBProxy:
         from the database for update in a transaction. Default=True
         :return: A QuerySet of Entries.
         '''
-        if select_for_update:
-            func = entries.Entry.objects.select_for_update().filter
-        else:
-            func = entries.Entry.objects.filter
+        func = self._update_or_filter(select_for_update)
         return func(
             identifier__in=epcs,
             decommissioned=False

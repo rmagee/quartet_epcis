@@ -32,6 +32,20 @@ EntryList = List[entries.Entry]
 
 class BusinessEPCISParser(QuartetParser):
 
+    def __init__(self, stream, event_cache_size: int = 1024,
+                 recursive_decommission: bool = True):
+        '''
+        Initializes a BusinessEPCISParser.  This parser will enforce business
+        rules around aggregation, decommissioning and the like.
+        :param stream: The XML message to parse.
+        :param event_cache_size: How large the event cache should grow to
+        before being committed to the database.
+        :param recursive_decommission: Whether or not Entries can be
+        implicitly decommissioned when their parent or to Entry is.
+        '''
+        super().__init__(stream, event_cache_size)
+        self.recursive_decommission = recursive_decommission
+
     def handle_aggregation_event(
         self,
         epcis_event: events.AggregationEvent
@@ -417,7 +431,8 @@ class BusinessEPCISParser(QuartetParser):
         self,
         db_entries: EntryList,
         db_event: db_events.Event,
-        epcis_event: events.EPCISEvent
+        epcis_event: events.EPCISEvent,
+        recursive: bool = True
     ):
         '''
         Will mark each entry in the entry list as decommissioned.
@@ -426,6 +441,10 @@ class BusinessEPCISParser(QuartetParser):
         Default = True
         '''
         if isinstance(db_entries, QuerySet):
+            if recursive:
+                children = db_proxy.get_entries_by_parents(db_entries)
+                if children.count() > 0:
+                    self._decommission_entries(children, db_event, epcis_event)
             db_entries.update(
                 decommissioned=True,
                 last_event=db_event,

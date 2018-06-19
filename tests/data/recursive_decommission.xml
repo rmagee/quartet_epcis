@@ -10,11 +10,7 @@
                 <recordTime>2018-01-22T22:52:49.294565+00:00</recordTime>
                 <eventTimeZoneOffset>+00:00</eventTimeZoneOffset>
                 <epcList>
-                    <epc>urn:epc:id:sgtin:305555.0555555.1</epc>
-                    <epc>urn:epc:id:sgtin:305555.0555555.2</epc>
-                    <epc>urn:epc:id:sgtin:305555.0555555.3</epc>
-                    <epc>urn:epc:id:sgtin:305555.0555555.4</epc>
-                    <epc>urn:epc:id:sgtin:305555.0555555.5</epc>
+                    <epc>urn:epc:id:sgtin:305555.3555555.1</epc>
                 </epcList>
                 <action>DELETE</action>
                 <bizStep>urn:epcglobal:cbv:bizstep:decomissioning</bizStep>
