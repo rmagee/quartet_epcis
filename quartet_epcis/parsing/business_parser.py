@@ -90,7 +90,7 @@ class BusinessEPCISParser(QuartetParser):
             # already packed inside another parent
             # step one- check the cache first!
             db_entries, count = self._get_entries_for_aggregation(
-                epcis_event.child_epcs)
+                epcis_event)
             # the count should be the same in the event and queryset
             if not count == len(epcis_event.child_epcs):
                 raise errors.InvalidAggregationEventError(
@@ -145,7 +145,8 @@ class BusinessEPCISParser(QuartetParser):
             )
             self.entry_event_cache.append(entry_event)
 
-    def _get_entries_for_aggregation(self, epcs: list):
+    def _get_entries_for_aggregation(self,
+                                     epcis_event: events.AggregationEvent):
         '''
         Will pull entries first from the local entries cache then, if not
         found, will attempt to get them from the database.
@@ -156,15 +157,16 @@ class BusinessEPCISParser(QuartetParser):
         '''
         db_entries = []
         count = 0
+        parent = self._get_entry(epcis_event.parent_id)
         # try the local cache
-        for epc in epcs:
+        for epc in epcis_event.child_epcs:
             entry = self.entry_cache.get(epc)
             if entry and not entry.decommissioned and not entry.parent_id:
                 db_entries.append(entry)
         count = len(db_entries)
         # if nothing was found, try the database
         if count == 0:
-            kwargs = {'identifier__in': epcs,
+            kwargs = {'identifier__in': epcis_event.child_epcs,
                       'decommissioned': False,
                       'parent_id': None}
             db_entries = entries.Entry.objects.select_for_update().filter(
@@ -210,11 +212,16 @@ class BusinessEPCISParser(QuartetParser):
                         db_entry, db_event, epcis_event)
         elif isinstance(db_entries, QuerySet):
             # then update the local cache if the db update was successful
-            for db_entry in list(db_entries):
+            for db_entry in db_entries:
                 self.entry_cache[db_entry.identifier] = db_entry
                 if db_entry.is_parent:
                     # get the children
                     children = db_proxy.get_entries_by_parent(db_entry)
+                    if parent:
+                        db_entry.top_id = parent.top_id or parent
+                    else:
+                        db_entry.top_id = parent
+                    db_entry.save()
                     self._update_aggregation_entries(
                         children,
                         db_entry, db_event, epcis_event)
