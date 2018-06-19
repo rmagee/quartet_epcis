@@ -302,7 +302,7 @@ class BusinessEPCISParser(QuartetParser):
         entry.last_event = db_event
         entry.last_event_time = epcis_event.event_time
         entry.last_disposition = epcis_event.disposition
-
+        entry.save()
         # create an entry event and add to the cache
         entryevent = entries.EntryEvent(entry=entry,
                                         event=db_event,

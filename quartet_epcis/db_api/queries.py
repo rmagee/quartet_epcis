@@ -550,7 +550,23 @@ class EPCISDBProxy:
         of the parent_entry.
         '''
         return entries.Entry.objects.filter(
-            parent_id=parent_entry,
+            parent_id__identifier=parent_entry,
+            decommissioned=False
+        )
+
+    def get_entries_by_top(self, top_entry: entries.Entry,
+                           select_for_update=True):
+        '''
+        Returns all entries that are under a top_entry.
+        :param top_entry: The top-level Entry instance.
+        :return: A QuerySet of Entry instances.
+        '''
+        if select_for_update:
+            func = entries.Entry.objects.select_for_update().filter
+        else:
+            func = entries.Entry.objects.filter
+        return func(
+            top_id=top_entry,
             decommissioned=False
         )
 

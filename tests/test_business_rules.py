@@ -113,6 +113,7 @@ class BusinessRulesTestCase(TestCase):
         all_child = entries.Entry.objects.filter(
             top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
         )
+        self.assertEqual(all_child.count(), 12)
         ee = entries.EntryEvent.objects.get(
             identifier='urn:epc:id:sgtin:305555.5555555.1',
             event_type=choices.EventTypeChoicesEnum.AGGREGATION.value,
@@ -180,6 +181,26 @@ class BusinessRulesTestCase(TestCase):
             entry__in=entries.Entry.objects.all()
         )
         self.assertEqual(evs.count(), 29)
+
+    # def test_pack_top_in_new_top(self):
+    #     '''
+    #     Packs a top level into a new top level and checks to make sure
+    #     the hierarchy is adjusted accordingly.
+    #     '''
+    #     # pack it all up
+    #     self._parse_test_data('data/commission.xml')
+    #     self._parse_test_data('data/nested_pack.xml')
+    #     entry_count = entries.Entry.objects.filter(
+    #         top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
+    #     ).count()
+    #     self.assertEqual(entry_count, 12)
+    #     self._parse_test_data('data/top_in_new_top.xml')
+    #     # verify
+    #     entry_count = entries.Entry.objects.filter(
+    #         top_id__identifier='urn:epc:id:sgtin:305555.5555555.2'
+    #     ).count()
+    #     self.assertEqual(entry_count,13)
+
 
     def test_bad_parent(self):
         '''
