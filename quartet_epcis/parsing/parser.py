@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import logging
 from typing import List
+from dateutil.parser import parse as parse_date
 from eparsecis.eparsecis import EPCISParser
 from quartet_epcis.models import events, entries, choices, headers
 from EPCPyYes.core.v1_2 import events as yes_events
@@ -120,7 +121,7 @@ class QuartetParser(EPCISParser):
         within an EPCIS xml structure.
 
         :param epcis_event: An EPCPyYes TransactionEvent class instance.
-        :return: None
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling a transaction event.')
         db_event = self.get_db_event(epcis_event)
@@ -132,6 +133,7 @@ class QuartetParser(EPCISParser):
         self.event_cache.append(db_event)
         if len(self.event_cache) >= self.event_cache_size:
             self.clear_cache()
+        return db_event
 
     def handle_top_level_id(self, top_id, db_event):
         '''
@@ -168,6 +170,7 @@ class QuartetParser(EPCISParser):
         Executed when an AggregationEvent xml structure has finished parsing.
 
         :param epcis_event: An EPCPyYes AggregationEvent instance.
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling ann aggregation event.')
         db_event = self.get_db_event(epcis_event)
@@ -176,6 +179,7 @@ class QuartetParser(EPCISParser):
         self.handle_common_elements(db_event, epcis_event)
         self.handle_top_level_id(epcis_event.parent_id, db_event)
         self.event_cache.append(db_event)
+        return db_event
 
     def handle_object_event(self, epcis_event: yes_events.ObjectEvent):
         '''
@@ -184,6 +188,7 @@ class QuartetParser(EPCISParser):
         class instance for use.
 
         :param epcis_event: The EPCPyYes ObjectEvent.
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling an ObjectEvent...')
         db_event = self.get_db_event(epcis_event)
@@ -192,6 +197,7 @@ class QuartetParser(EPCISParser):
         self.handle_common_elements(db_event, epcis_event)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
         self.event_cache.append(db_event)
+        return db_event
 
     def handle_transformation_event(
         self,
@@ -201,7 +207,7 @@ class QuartetParser(EPCISParser):
         Executed when a TransformationEvent xml element has completed parsing
         into a valid EPCPyYes TransformationEvent
         :param epcis_event: The EPCPyYes TransformationEvent
-        :return: None
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling a TransformationEvent...')
         db_event = self.get_db_event(epcis_event)
@@ -212,6 +218,7 @@ class QuartetParser(EPCISParser):
                             output=True)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
         self.event_cache.append(db_event)
+        return db_event
 
     def handle_common_elements(
         self,
@@ -308,7 +315,8 @@ class QuartetParser(EPCISParser):
                                                         decommissioned=False)
             # if an event is out of order but not an observation then throw
             # an out of order exception
-            if not created and epcis_event.event_time < entry.last_event_time \
+            event_time = parse_date(epcis_event.event_time)
+            if not created and event_time < entry.last_event_time \
                 and db_event.action != yes_events.Action.observe.value:
                 raise self.EventOrderException(_(
                     'An event was received which was temporally '
@@ -316,7 +324,7 @@ class QuartetParser(EPCISParser):
                 ))
             # set the last event pointers
             entry.last_event = db_event
-            entry.last_event_time = epcis_event.event_time
+            entry.last_event_time = event_time
             entry.last_disposition = epcis_event.disposition
             # if this is an aggregation event and is not an observation then
             # mark the last agg event pointer and envent type.

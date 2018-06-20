@@ -56,6 +56,25 @@ class BusinessRulesTestCase(TestCase):
             parent_id.identifier
         )
 
+    def test_uncommissioned_delete(self):
+        '''
+        Tries to use an uncommissioned item in an object event of
+        type delete.
+        '''
+        with self.assertRaises(errors.EntryException):
+            self._parse_test_data('data/uncommissioned_delete.xml')
+
+    def test_uncommissioned_observe(self):
+        '''
+        Tries to observe an item that was never commissioned.
+        '''
+        with self.assertRaises(errors.EntryException):
+            self._parse_test_data('data/uncommissioned_observe.xml')
+
+    def test_uncommissioned_transaction(self):
+        with self.assertRaises(errors.EntryException):
+            self._parse_test_data('data/uncommissioned_transaction.xml')
+
     def test_bad_repack(self):
         '''
         Tries to pack an item that's already been packed.
@@ -87,7 +106,7 @@ class BusinessRulesTestCase(TestCase):
         :return:
         '''
         # commission the items
-        self._parse_test_data()
+        self._parse_test_data('data/commission.xml')
         # decommission the items
         self._parse_test_data('data/decommission.xml',
                               recursive_decommission=False)
@@ -124,14 +143,16 @@ class BusinessRulesTestCase(TestCase):
         # then pack
         self.assertEqual(
             entries.Entry.objects.all().count(),
-            13
+            13,
+            "There should be a total of 13 entries commissioned."
         )
         self._parse_test_data('data/nested_pack.xml')
         palet = entries.Entry.objects.get(
             identifier='urn:epc:id:sgtin:305555.5555555.1'
         )
         db_entries = db_proxy.get_entries_by_parent(palet)
-        self.assertEqual(db_entries.count(), 2)
+        self.assertEqual(db_entries.count(), 2, "The entry count was "
+                                                "incorrect")
         for entry in db_entries:
             self.assertEqual(
                 db_proxy.get_entries_by_parent(entry).count(),
@@ -140,7 +161,8 @@ class BusinessRulesTestCase(TestCase):
         all_child = entries.Entry.objects.filter(
             top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
         )
-        self.assertEqual(all_child.count(), 12)
+        self.assertEqual(all_child.count(), 12, "There should be a total"
+                                                " of 12 children.")
         ee = entries.EntryEvent.objects.get(
             identifier='urn:epc:id:sgtin:305555.5555555.1',
             event_type=choices.EventTypeChoicesEnum.AGGREGATION.value,
@@ -151,8 +173,11 @@ class BusinessRulesTestCase(TestCase):
             entry__in=entries.Entry.objects.all()
         )
         # 13 + 6 + 6 + 3 entry events should be stored.
-        self.assertEqual(evs.count(), 28)
-        self.assertEqual(all_child.count(), 12)
+        self.assertEqual(evs.count(), 28, "There should be 28 entry events.")
+        self.assertEqual(all_child.count(), 12, "There should be a "
+                                                "total of 12 children.")
+        event_count = events.Event.objects.all().count()
+        self.assertEqual(event_count, 4, "There should be four events.")
 
     def test_uncommissioned_pack(self):
         '''
@@ -237,6 +262,11 @@ class BusinessRulesTestCase(TestCase):
             self._parse_test_data('data/commission.xml')
             self._parse_test_data('data/bad_parent.xml')
 
+    def test_observe_transaction(self):
+        self._parse_test_data('data/commission.xml')
+        self._parse_test_data('data/observe_transaction.xml')
+        self.assertEqual(entries.EntryEvent.objects.all().count(), 18)
+
     def test_pack_unpack_repack(self):
         '''
         Packs, unpacks and repacks an entry.
@@ -246,6 +276,11 @@ class BusinessRulesTestCase(TestCase):
             entries.Entry.objects.all().count(),
             13
         )
+        db_entry = entries.Entry.objects.get(
+            identifier='urn:epc:id:sgtin:305555.0555555.8',
+        )
+        oevent = db_proxy.get_epcis_event(db_entry.last_event)
+        self.assertEqual(len(oevent.epc_list), 13)
         self._parse_test_data('data/nested_pack.xml')
         palet = entries.Entry.objects.get(
             identifier='urn:epc:id:sgtin:305555.5555555.1'

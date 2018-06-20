@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import logging
+from dateutil.parser import parse as parse_date
 from django.utils.translation import gettext as _
 from typing import List
 from django.db.models import QuerySet
@@ -62,26 +63,55 @@ class BusinessEPCISParser(QuartetParser):
         db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
         # see what kind of agg event we have here and process accordingly
         if epcis_event.action == events.Action.add.value:
-            # TODO: check the date and update the parent if necessary
             # check the action date against the latest entry_event
             # if the event is after the last event then update the parent
             # data on the entry
             self._handle_aggregation_parent(db_event, epcis_event)
             self._handle_aggregation_entries(db_event, epcis_event)
+            self.event_cache.append(db_event)
         elif epcis_event.action == events.Action.delete.value:
-            # TODO: check the data and remove the parent if necessary
             self._handle_delete_action(db_event, epcis_event)
+            self.event_cache.append(db_event)
         else:
+            epcs = epcis_event.child_epcs.copy()
+            if epcis_event.parent_id: epcs.append(epcis_event.parent_id)
+            self._get_entries(epcs)
             super().handle_aggregation_event(epcis_event)
 
+    def handle_transaction_event(self,
+                                 epcis_event: yes_events.TransactionEvent):
+        '''
+        Checks the epcs for validity before handing off to the base class.
+        Validity checks are according to section 7.4.4 of the EPCIS 1.2
+        standard.
+        :param epcis_event: The EPCPyYes event being parsed.
+        '''
+        epcs = epcis_event.epc_list.copy()
+        if epcis_event.parent_id: epcs.append(epcis_event.parent_id)
+        self._get_entries(epcs)
+        # if everything is good, hand-off the base class
+        db_event = super().handle_transaction_event(epcis_event)
+
     def handle_object_event(self, epcis_event: yes_events.ObjectEvent):
-        db_event = self.get_db_event(epcis_event)
-        db_event.type = choices.EventTypeChoicesEnum.OBJECT.value
-        if epcis_event.action == events.Action.delete.value:
+        '''
+        Checks inbound EPCPyYes ObjectEvents and makes sure they follow
+        the object event guidelines in section 7.4.2 of the EPCIS 1.2
+        standard.
+        :param epcis_event: The EPCPyYes object event being scrutinized.
+        :return: None
+        '''
+        if epcis_event.action == events.Action.add.value:
+            db_event = super().handle_object_event(epcis_event)
             db_entries = self._get_entries(epcis_event.epc_list)
-            self._decommission_entries(db_entries, db_event, epcis_event)
+            self._update_event_entries(db_entries, db_event, epcis_event)
         else:
-            super().handle_object_event(epcis_event)
+            db_event = self.get_db_event(epcis_event)
+            db_event.type = choices.EventTypeChoicesEnum.OBJECT.value
+            db_entries = self._get_entries(epcis_event.epc_list)
+            self._update_event_entries(db_entries, db_event, epcis_event)
+            if epcis_event.action == events.Action.delete.value:
+                self._decommission_entries(db_entries, db_event, epcis_event)
+            self.event_cache.append(db_event)
 
     def _handle_aggregation_entries(
         self, db_event: str, epcis_event: events.AggregationEvent
@@ -95,7 +125,6 @@ class BusinessEPCISParser(QuartetParser):
         :return:
         '''
         if epcis_event.action == events.Action.add.value:
-            # TODO: check the date and update the parent if necessary
             # check the action date against the latest entry_event
             # if the event is after the last event then update the parent
             # data on the entry
@@ -130,11 +159,6 @@ class BusinessEPCISParser(QuartetParser):
                 self.create_entry_events(db_entries, db_event, epcis_event)
                 self._update_aggregation_entries(db_entries, parent, db_event,
                                                  epcis_event)
-
-
-        elif epcis_event.action == events.Action.delete.value:
-            # TODO: check the data and remove the parent if necessary
-            pass
         else:
             self.handle_entries(db_event, epcis_event.child_epcs,
                                 epcis_event.event_time)
@@ -216,7 +240,7 @@ class BusinessEPCISParser(QuartetParser):
                 else:
                     db_entry.top_id = parent
                 db_entry.last_event = db_event
-                db_entry.last_event_time = epcis_event.event_time
+                db_entry.last_event_time = parse_date(epcis_event.event_time)
                 db_entry.last_disposition = epcis_event.disposition
                 db_entry.parent_id = parent
                 db_entry.save()
@@ -244,10 +268,10 @@ class BusinessEPCISParser(QuartetParser):
                 parent_id=parent,
                 top_id=parent.top_id or parent if parent else parent,
                 last_aggregation_event=db_event,
-                last_aggregation_event_time=epcis_event.event_time,
+                last_aggregation_event_time=parse_date(epcis_event.event_time),
                 last_aggregation_event_action=epcis_event.action,
                 last_event=db_event,
-                last_event_time=epcis_event.event_time,
+                last_event_time=parse_date(epcis_event.event_time),
                 last_disposition=epcis_event.disposition
             )
             if count == 0:
@@ -274,14 +298,14 @@ class BusinessEPCISParser(QuartetParser):
         if isinstance(db_entries, list):
             for db_entry in db_entries:
                 db_entry.last_event = db_event
-                db_entry.last_event_time = epcis_event.event_time
+                db_entry.last_event_time = parse_date(epcis_event.event_time)
                 db_entry.last_disposition = epcis_event.disposition
                 db_entry.save()
         elif isinstance(db_entries, QuerySet):
             # update the database
             count = db_entries.update(
                 last_event=db_event,
-                last_event_time=epcis_event.event_time,
+                last_event_time=parse_date(epcis_event.event_time),
                 last_disposition=epcis_event.disposition
             )
             if count == 0:
@@ -317,11 +341,11 @@ class BusinessEPCISParser(QuartetParser):
             )
         # set all the pointers and convienince properties on the entry
         entry.last_aggregation_event_action = epcis_event.action
-        entry.last_aggregation_event_time = epcis_event.event_time
+        entry.last_aggregation_event_time = parse_date(epcis_event.event_time)
         entry.last_aggregation_event = db_event
         entry.is_parent = True
         entry.last_event = db_event
-        entry.last_event_time = epcis_event.event_time
+        entry.last_event_time = parse_date(epcis_event.event_time)
         entry.last_disposition = epcis_event.disposition
         entry.save()
         # create an entry event and add to the cache
@@ -334,11 +358,6 @@ class BusinessEPCISParser(QuartetParser):
         self.entry_event_cache.append(entryevent)
         logger.debug('Cached Entry for top id %s', epcis_event.parent_id)
         return entry
-
-    def _handle_children(self):
-        pass
-        # TODO if a parent has children and is being given a parent itself,
-        # update the children with a new TOP
 
     def _handle_delete_action(self, db_event: db_events.Event,
                               epcis_event: events.AggregationEvent):
@@ -398,11 +417,6 @@ class BusinessEPCISParser(QuartetParser):
                       'decommissioned or never commissioned'),
                     epc
                 )
-        if entry.decommissioned:
-            raise errors.EntryException(
-                _('The entry with %s was decommissioned.'),
-                epc
-            )
         return entry
 
     def _get_entries(self, epcs: list):
@@ -423,7 +437,9 @@ class BusinessEPCISParser(QuartetParser):
             if db_entries.count() != len(epcs):
                 raise errors.EntryException(
                     _('The number of entries returned does not match with '
-                      'the number requested.')
+                      'the number requested.  This indicates that one of '
+                      'the entries has either been decommissioned or was '
+                      'never commissioned.')
                 )
         return db_entries
 
@@ -448,13 +464,13 @@ class BusinessEPCISParser(QuartetParser):
             db_entries.update(
                 decommissioned=True,
                 last_event=db_event,
-                last_event_time=epcis_event.event_time,
+                last_event_time=parse_date(epcis_event.event_time),
                 last_disposition=epcis_event.disposition
             )
         else:
             for entry in db_entries:
                 entry.decommissioned = True
                 entry.last_event = db_event
-                entry.last_event_time = epcis_event.event_time
+                entry.last_event_time = parse_date(epcis_event.event_time)
                 entry.last_disposition = epcis_event.disposition
                 entry.save()

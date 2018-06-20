@@ -36,3 +36,8 @@ class EntryException(BaseEPCISError):
 class DecommissionedEntryException(BaseEPCISError):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
+
+
+class CommissioningError(BaseEPCISError):
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
