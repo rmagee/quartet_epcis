@@ -85,7 +85,7 @@
                     </destinationList>
                 </extension>
             </AggregationEvent>
-                        <AggregationEvent>
+            <AggregationEvent>
                 <eventTime>2018-01-22T22:51:49.294565+00:00</eventTime>
                 <recordTime>2018-01-22T22:51:49.294565+00:00</recordTime>
                 <eventTimeZoneOffset>+00:00</eventTimeZoneOffset>

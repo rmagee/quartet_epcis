@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import os
+import logging
 from django.test import TestCase
 from quartet_epcis.db_api.queries import EPCISDBProxy
 from quartet_epcis.models import events, choices, headers, entries
@@ -22,7 +23,7 @@ from quartet_epcis.parsing.parser import QuartetParser
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 
 db_proxy = EPCISDBProxy()
-
+logger = logging.getLogger(__name__)
 
 class BusinessRulesTestCase(TestCase):
     '''
@@ -271,14 +272,15 @@ class BusinessRulesTestCase(TestCase):
         self._parse_test_data('data/commission.xml')
         self._parse_test_data('data/observe_aggregation.xml')
         self.assertEqual(entries.EntryEvent.objects.all().count(), 19)
-        db_events = db_proxy.get_events_by_epc('urn:epc:id:sgtin:305555.3555555.1')
-        self.assertEqual(len(db_events),2)
+        db_events = db_proxy.get_events_by_epc(
+            'urn:epc:id:sgtin:305555.3555555.1')
+        self.assertEqual(len(db_events), 2)
 
     def test_pack_unpack_repack(self):
         '''
         Packs, unpacks and repacks an entry.
         '''
-        self._parse_test_data('data/commission.xml')
+        parser = self._parse_test_data('data/commission.xml')[1]
         self.assertEqual(
             entries.Entry.objects.all().count(),
             13
@@ -294,8 +296,18 @@ class BusinessRulesTestCase(TestCase):
         )
         db_entries = db_proxy.get_entries_by_parent(palet)
         self.assertEqual(db_entries.count(), 2)
-        self._parse_test_data('data/unpack_item.xml')
-        self._parse_test_data('data/repack_item.xml')
+        parser.stream = self._get_stream('data/unpack_item.xml')
+        parser.parse()
+        unpacked_item = entries.Entry.objects.get(
+            identifier='urn:epc:id:sgtin:305555.0555555.1')
+        self.assertEqual(unpacked_item.top_id, None,
+                         "The item should not have"
+                         " a top after being unpacked.")
+        self.assertEqual(unpacked_item.parent_id, None,
+                         "The item should not have a parent after being "
+                         "unpacked.")
+        parser.stream = self._get_stream('data/repack_item.xml')
+        parser.parse()
 
     def _parse_test_data(self, test_file='data/epcis.xml',
                          parser_type=BusinessEPCISParser,
@@ -313,4 +325,8 @@ class BusinessRulesTestCase(TestCase):
         message_id = parser.parse()
         print(parser.event_cache)
         parser.clear_cache()
-        return message_id
+        return message_id, parser
+
+    def _get_stream(self, file_name):
+        curpath = os.path.dirname(__file__)
+        return os.path.join(curpath, file_name)

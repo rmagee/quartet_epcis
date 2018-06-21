@@ -62,21 +62,19 @@ class BusinessEPCISParser(QuartetParser):
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
         # see what kind of agg event we have here and process accordingly
-        if epcis_event.action == events.Action.add.value:
-            # check the action date against the latest entry_event
-            # if the event is after the last event then update the parent
-            # data on the entry
-            self._handle_aggregation_parent(db_event, epcis_event)
-            self._handle_aggregation_entries(db_event, epcis_event)
-            self.event_cache.append(db_event)
-        elif epcis_event.action == events.Action.delete.value:
-            self._handle_delete_action(db_event, epcis_event)
-            self.event_cache.append(db_event)
-        else:
+        if epcis_event.action == events.Action.observe.value:
             epcs = epcis_event.child_epcs.copy()
             if epcis_event.parent_id: epcs.append(epcis_event.parent_id)
             self._get_entries(epcs)
             super().handle_aggregation_event(epcis_event)
+        else:
+            if epcis_event.action == events.Action.add.value:
+                self._handle_aggregation_parent(db_event, epcis_event)
+            else:
+                self._handle_aggregation_delete_action(db_event, epcis_event)
+            self._handle_aggregation_entries(db_event, epcis_event)
+            self.handle_common_elements(db_event, epcis_event)
+            self.event_cache.append(db_event)
 
     def handle_transaction_event(self,
                                  epcis_event: yes_events.TransactionEvent):
@@ -112,6 +110,7 @@ class BusinessEPCISParser(QuartetParser):
             if epcis_event.action == events.Action.delete.value:
                 self._decommission_entries(db_entries, db_event, epcis_event)
             self.event_cache.append(db_event)
+            self.handle_common_elements(db_event, epcis_event)
 
     def _handle_aggregation_entries(
         self, db_event: str, epcis_event: events.AggregationEvent
@@ -147,21 +146,13 @@ class BusinessEPCISParser(QuartetParser):
                 # ok, the count matches and they can be packed. now we
                 # just check the parent to make sure that the parent is
                 # a valid epc
-                try:
-                    parent = self._get_entry(
-                        epc=epcis_event.parent_id
-                    )
-                except entries.Entry.DoesNotExist:
-                    raise errors.InvalidAggregationEventError(
-                        _('The parent epc %s was either never commissioned or'
-                          'was decommissioned.')
-                    )
+                parent = self._get_entry(epc=epcis_event.parent_id)
                 self.create_entry_events(db_entries, db_event, epcis_event)
                 self._update_aggregation_entries(db_entries, parent, db_event,
                                                  epcis_event)
         else:
             self.handle_entries(db_event, epcis_event.child_epcs,
-                                epcis_event.event_time)
+                                epcis_event)
 
     def create_entry_events(self, db_entries, db_event, epcis_event):
         '''
@@ -230,54 +221,23 @@ class BusinessEPCISParser(QuartetParser):
         :return: None
         '''
         # the top is the parent's top or the parent itself...
-        if isinstance(db_entries, list):
-            for db_entry in db_entries:
-                db_entry.last_aggregation_event_time = epcis_event.event_time
-                db_entry.last_aggregation_event = db_event
-                db_entry.last_aggregation_event_action = epcis_event.action
-                if parent:
-                    db_entry.top_id = parent.top_id or parent
-                else:
-                    db_entry.top_id = parent
-                db_entry.last_event = db_event
-                db_entry.last_event_time = parse_date(epcis_event.event_time)
-                db_entry.last_disposition = epcis_event.disposition
-                db_entry.parent_id = parent
-                db_entry.save()
-                if db_entry.is_parent:
-                    self._update_aggregation_entries(
-                        entries.Entry.objects.filter(parent_id=db_entry),
-                        db_entry, db_event, epcis_event)
-        elif isinstance(db_entries, QuerySet):
-            # then update the local cache if the db update was successful
-            for db_entry in db_entries:
-                self.entry_cache[db_entry.identifier] = db_entry
-                if db_entry.is_parent:
-                    # get the children
-                    children = db_proxy.get_entries_by_parent(db_entry)
-                    if parent:
-                        db_entry.top_id = parent.top_id or parent
-                    else:
-                        db_entry.top_id = parent
-                    db_entry.save()
-                    self._update_aggregation_entries(
-                        children,
-                        db_entry, db_event, epcis_event)
-            # update the database
-            count = db_entries.update(
-                parent_id=parent,
-                top_id=parent.top_id or parent if parent else parent,
-                last_aggregation_event=db_event,
-                last_aggregation_event_time=parse_date(epcis_event.event_time),
-                last_aggregation_event_action=epcis_event.action,
-                last_event=db_event,
-                last_event_time=parse_date(epcis_event.event_time),
-                last_disposition=epcis_event.disposition
-            )
-            if count == 0:
-                raise errors.EntryException(
-                    _('No Entry records were updated.')
-                )
+        for db_entry in db_entries:
+            db_entry.last_aggregation_event_time = epcis_event.event_time
+            db_entry.last_aggregation_event = db_event
+            db_entry.last_aggregation_event_action = epcis_event.action
+            if parent:
+                db_entry.top_id = parent.top_id or parent
+            else:
+                db_entry.top_id = parent
+            db_entry.last_event = db_event
+            db_entry.last_event_time = parse_date(epcis_event.event_time)
+            db_entry.last_disposition = epcis_event.disposition
+            db_entry.parent_id = parent
+            db_entry.save()
+            if db_entry.is_parent:
+                self._update_aggregation_entries(
+                    entries.Entry.objects.filter(parent_id=db_entry),
+                    db_entry, db_event, epcis_event)
 
     def _update_event_entries(
         self,
@@ -359,8 +319,8 @@ class BusinessEPCISParser(QuartetParser):
         logger.debug('Cached Entry for top id %s', epcis_event.parent_id)
         return entry
 
-    def _handle_delete_action(self, db_event: db_events.Event,
-                              epcis_event: events.AggregationEvent):
+    def _handle_aggregation_delete_action(self, db_event: db_events.Event,
+                                          epcis_event: events.AggregationEvent):
         # 1. see if there is a parent and children
         # if parent and children then set the parent and top of the children
         # to none
@@ -402,6 +362,11 @@ class BusinessEPCISParser(QuartetParser):
         :return: An Entry model instance.
         '''
         entry = self.entry_cache.get(epc)
+        if entry and entry.decommissioned:
+            raise errors.DecommissionedEntryException(
+                'The entry with identifier %s has been decommissioned.',
+                epc
+            )
         if not entry:
             try:
                 entry = entries.Entry.objects.get(
@@ -456,21 +421,13 @@ class BusinessEPCISParser(QuartetParser):
         :param recursive: Whether or not to decommission any child entries.
         Default = True
         '''
-        if isinstance(db_entries, QuerySet):
-            if recursive:
-                children = db_proxy.get_entries_by_parents(db_entries)
-                if children.count() > 0:
-                    self._decommission_entries(children, db_event, epcis_event)
-            db_entries.update(
-                decommissioned=True,
-                last_event=db_event,
-                last_event_time=parse_date(epcis_event.event_time),
-                last_disposition=epcis_event.disposition
-            )
-        else:
-            for entry in db_entries:
-                entry.decommissioned = True
-                entry.last_event = db_event
-                entry.last_event_time = parse_date(epcis_event.event_time)
-                entry.last_disposition = epcis_event.disposition
-                entry.save()
+        if recursive:
+            children = db_proxy.get_entries_by_parents(db_entries)
+            if children.count() > 0:
+                self._decommission_entries(children, db_event, epcis_event)
+        for entry in db_entries:
+            entry.decommissioned = True
+            entry.last_event = db_event
+            entry.last_event_time = parse_date(epcis_event.event_time)
+            entry.last_disposition = epcis_event.disposition
+            entry.save()
