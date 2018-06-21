@@ -19,6 +19,7 @@ from EPCPyYes.core.v1_2.events import Action
 from quartet_capture import models
 from quartet_capture.rules import RuleContext
 from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices
 from quartet_epcis.db_api.queries import get_destinations, get_sources
@@ -34,6 +35,12 @@ class TestQuartet(TestCase):
         parser = QuartetParser(
             os.path.join(curpath, 'data/epcis.xml')
         )
+        self.run_parser(parser)
+        parser = BusinessEPCISParser(
+            os.path.join(curpath, 'data/epcis.xml')
+        )
+
+    def run_parser(self, parser):
         parser.parse()
         print(parser.event_cache)
         parser.clear_cache()
