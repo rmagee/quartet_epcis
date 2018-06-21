@@ -24,3 +24,13 @@ History
 anyway.  Switched to `rule.Step` from `models.Step`.
 * Added on_failure to the EPCISParsingStep to account for the new abstract
 method on the base `quartet_capture.rules.Step` class.
+
+1.1 June 21 2018
+++++++++++++++++
+* Addition of new business parser for EPCIS.  The business parser inherits
+from the original `quartet_epcis.parsing.parser.QuartetParser` and adds
+additional business context processing.  The new parser will perform and
+track explicit aggregation and dissagregation functions as well as maintain
+records of deleted/decommissioned events and check for events containing
+EPCs that were never commissioned.  Over 800 lines of unit testing code along
+with 30 tests now cover just the quartet_epcis parsers and API.
