@@ -116,6 +116,20 @@ class EPCISDBProxy:
             decommissioned=False
         )
 
+    def get_epcs_by_parent_identifier(self, identifier:str,
+                                         select_for_update=True):
+        '''
+        Returns a list of EPCs (identifier values) based on
+        the incoming identifier of the parent.
+        :param identifier: The identifier field of the parent Entry.
+        :return: A list of strings representing the child epcs/identifiers.
+        '''
+        return entries.Entry.objects.filter(
+            parent_id__identifier=identifier,
+            decommissioned=False
+        ).values_list('identifier', flat=True)
+
+
     def get_events_by_epc(self, epc: str = None, epc_pk: str = None):
         '''
         Returns a list of EPCPyEvents the epc was found in.

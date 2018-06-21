@@ -74,6 +74,9 @@ class EPCISParsingStep(RuleStep):
 
     def execute(self, data, rule_context: RuleContext):
         parser_type = QuartetParser if self.loose_enforcement else BusinessEPCISParser
+        self.info('Loose Enforcement of busines rules set to %s',
+                  self.loose_enforcement)
+        self.info('Parsing message %s.dat', rule_context.rule_name)
         try:
             if isinstance(data, File):
                 parser = parser_type(data) if self.loose_enforcement else EPC
@@ -82,6 +85,7 @@ class EPCISParsingStep(RuleStep):
         except TypeError:
             parser = parser_type(io.BytesIO(data.encode()))
         parser.parse()
+        self.info('Parsing complete.')
 
     def on_failure(self):
         pass
