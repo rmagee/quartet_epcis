@@ -61,7 +61,7 @@ Features
 Running The Unit Tests
 ----------------------
 
-.. code-block::text
+.. code-block:: text
 
     source <YOURVIRTUALENV>/bin/activate
     (myenv) $ pip install -r requirements_test.txt
