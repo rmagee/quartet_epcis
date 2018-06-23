@@ -36,7 +36,7 @@ Quickstart
 Install QU4RTET EPCIS
 +++++++++++++++++++++
 
-.. code-block::text
+.. code-block:: text
 
     pip install quartet_epcis
 
