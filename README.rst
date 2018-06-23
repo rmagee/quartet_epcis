@@ -34,7 +34,7 @@ Quickstart
 ----------
 
 Install QU4RTET EPCIS
-+++++++++++++++++++++
+---------------------
 
 .. code-block:: text
 
@@ -57,6 +57,8 @@ Features
 
 * Maintains the database schema for EPCIS 1.2 support.
 * Parses EPCIS 1.2 XML streams to the configured backend database system.
+* Enforces business rules around decommissioning, commissioning, aggregation,
+disaggregation, etc.
 
 Running The Unit Tests
 ----------------------
