@@ -98,7 +98,7 @@ class TestQuartet(TestCase):
         self.assertEqual(res.count(), 2, 'There should only be '
                                          'two parent entryevents.')
         for entry_event in res:
-            logger.debug("Entry event __str__ check %s", entry_event)
+            logger.debug("Entry event __str__ check %s", str(entry_event))
         logger.debug('Parent count checks out.')
         self.confirm_three_parents()
 

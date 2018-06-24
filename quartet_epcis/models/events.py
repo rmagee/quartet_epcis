@@ -40,8 +40,7 @@ class Event(abstractmodels.EPCISBusinessEvent):
     )
 
     def __str__(self):
-        "{0}: {1}:{2}".format(self.type, self.action,
-                              self.event_time.isoformat())
+        "%s: %s" % (self.id, self.message_id)
 
     class Meta:
         app_label = 'quartet_epcis'

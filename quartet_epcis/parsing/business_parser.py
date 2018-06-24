@@ -136,11 +136,12 @@ class BusinessEPCISParser(QuartetParser):
             # the count should be the same in the event and queryset
             if not count == len(epcis_event.child_epcs):
                 raise errors.InvalidAggregationEventError(
-                    _('The aggregation event with id %s contained children '
+                    _('The aggregation event with parent %s '
+                      'contained children '
                       'in the child_epc list that were either '
                       'never commissioned, decommissioned '
                       'or already in another aggregation.'),
-                    epcis_event.id
+                    epcis_event.parent_id
                 )
             else:
                 # ok, the count matches and they can be packed. now we
@@ -308,14 +309,10 @@ class BusinessEPCISParser(QuartetParser):
         entry.last_event_time = parse_date(epcis_event.event_time)
         entry.last_disposition = epcis_event.disposition
         entry.save()
+        # if its not in the cache it needs to be added
+        self.entry_cache[entry.identifier] == entry
         # create an entry event and add to the cache
-        entryevent = entries.EntryEvent(entry=entry,
-                                        event=db_event,
-                                        event_time=db_event.event_time,
-                                        event_type=db_event.type,
-                                        identifier=epcis_event.parent_id,
-                                        is_parent=True)
-        self.entry_event_cache.append(entryevent)
+        self._create_parent_entry_event(db_event, epcis_event)
         logger.debug('Cached Entry for top id %s', epcis_event.parent_id)
         return entry
 
@@ -329,6 +326,7 @@ class BusinessEPCISParser(QuartetParser):
             db_entries = self._get_entries(
                 epcis_event.child_epcs
             )
+            # create the entry events for the children
             self.create_entry_events(db_entries, db_event, epcis_event)
         else:
             db_entries = db_proxy.get_entries_by_parent(epcis_event.parent_id)
@@ -339,19 +337,32 @@ class BusinessEPCISParser(QuartetParser):
             lower_entries.update(
                 top_id=None
             )
-            entryevent = entries.EntryEvent(
-                entry=self._get_entry(epcis_event.parent_id),
-                event=db_event,
-                event_time=epcis_event.event_time,
-                event_type=db_event.type,
-                identifier=epcis_event.parent_id,
-                is_parent=True
-            )
-            self.entry_event_cache.append(entryevent)
+        self._create_parent_entry_event(db_event, epcis_event)
 
         self._update_aggregation_entries(
             db_entries, None, db_event, epcis_event
         )
+
+    def _create_parent_entry_event(self, db_event, epcis_event):
+        '''
+        Based on the EPCPyYes event and the database Event model instance,
+        will create an intersection entity reference to the parent of the
+        event and the parent entry.
+        :param db_event: The Event model instance.
+        :param epcis_event: An EPCPyYes event with a parent or top.
+        :return: Returns the created EntryEvent model instance.
+        '''
+        # create the entry event for the parent
+        entryevent = entries.EntryEvent(
+            entry=self._get_entry(epcis_event.parent_id),
+            event=db_event,
+            event_time=epcis_event.event_time,
+            event_type=db_event.type,
+            identifier=epcis_event.parent_id,
+            is_parent=True
+        )
+        self.entry_event_cache.append(entryevent)
+        return entryevent
 
     def _get_entry(self, epc: str):
         '''

@@ -21,6 +21,7 @@ from EPCPyYes.core.v1_2 import template_events, events as pyyes_events
 from EPCPyYes.core.SBDH import sbdh, template_sbdh
 from quartet_epcis.models.choices import EventTypeChoicesEnum
 from quartet_epcis.models import events, entries, headers
+from quartet_epcis.parsing import errors
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ class EPCISDBProxy:
                 document.aggregation_events.append(event)
         return document
 
-    def get_entries_by_parent_identifier(self, identifier:str,
+    def get_entries_by_parent_identifier(self, identifier: str,
                                          select_for_update=True):
         '''
         Returns a QuerySet of entries based on the incoming identifier
@@ -116,8 +117,8 @@ class EPCISDBProxy:
             decommissioned=False
         )
 
-    def get_epcs_by_parent_identifier(self, identifier:str,
-                                         select_for_update=True):
+    def get_epcs_by_parent_identifier(self, identifier: str,
+                                      select_for_update=True):
         '''
         Returns a list of EPCs (identifier values) based on
         the incoming identifier of the parent.
@@ -128,7 +129,6 @@ class EPCISDBProxy:
             parent_id__identifier=identifier,
             decommissioned=False
         ).values_list('identifier', flat=True)
-
 
     def get_events_by_epc(self, epc: str = None, epc_pk: str = None):
         '''
@@ -328,7 +328,8 @@ class EPCISDBProxy:
         :param db_event: The event
         :return:
         '''
-        logger.debug('Getting business event data for db event %s', db_event)
+        logger.debug('Getting business event data for db event %s',
+                     str(db_event.id))
         p_event.biz_location = db_event.biz_location
         p_event.read_point = db_event.read_point
         p_event.disposition = db_event.disposition
@@ -352,7 +353,8 @@ class EPCISDBProxy:
         :param p_event: The EPCPyYes event that inherits from the
         base EPCISEvent class.
         '''
-        logger.debug('Getting base epcis data for db event %s', db_event)
+        logger.debug('Getting base epcis data for db event %s',
+                     str(db_event.id))
         self.get_error_declaration(db_event, p_event)
         p_event.event_time = db_event.event_time.isoformat()
         p_event.event_timezone_offset = db_event.event_timezone_offset
@@ -539,7 +541,7 @@ class EPCISDBProxy:
         xform_event = template_events.TransformationEvent()
         # get the basic EPCISEvent values
         self.get_base_epcis_event(db_event, xform_event)
-        logger.debug('Hadling a transformation event %s', db_event)
+        logger.debug('Handling a transformation event')
         xform_event.input_epc_list = self.get_input_epc_list(db_event)
         xform_event.output_epc_list = self.get_output_epc_list(db_event)
         xform_event.input_quantity_list = self.get_quantity_list(db_event)
@@ -570,7 +572,7 @@ class EPCISDBProxy:
             return tid.identifier
         except events.TransformationID.DoesNotExist:
             logger.debug('No transformation id was found for event %s',
-                         db_event)
+                         db_event.id)
 
     def get_entries_by_parent(self, parent_entry: entries.Entry,
                               select_for_update=True):
@@ -583,6 +585,21 @@ class EPCISDBProxy:
         '''
         return entries.Entry.objects.filter(
             parent_id__identifier=parent_entry,
+            decommissioned=False
+        )
+
+    def get_entry_child_parents(self, parent_entry: entries.Entry,
+                                select_for_update=True):
+        '''
+        Returns a queryset containing all child Entries for a parent level
+        entry where the children are also parents.
+        :param parent_entry: The parent to retrieve the children for.
+        :return: A queryset of Entry model instances reflecting the children
+        of the parent_entry that are also parents.
+        '''
+        return entries.Entry.objects.filter(
+            parent_id__identifier=parent_entry,
+            is_parent=True,
             decommissioned=False
         )
 
@@ -685,6 +702,69 @@ class EPCISDBProxy:
             ))
         for event in events:
             ret.append(event)
+        return ret
+
+    def get_aggregation_parents_by_epcs(self, epcs: list):
+        """
+        Will return a dictionary of EPCPyYes aggregation events
+        based on the input
+        list.  The assumption is that the list contains a number of parent
+        epc values (the identifier field in the
+        `quartet_epcis.models.entries.Entry` model.  Any children of the
+        parents will also be returned.  Basically returns everything except
+        the bottom level entries in a hierarchy.
+        :param epcs: A list of epc urns or identifiers that can be used
+        to lookup an Entry by its indentifier field.
+        :return: A dictionary of
+        `EPCPyYes.core.v1_2.template_events.AggregationEvents` with the key
+        as the identifier (urn) and the value being the event.
+        """
+        # get all the epcs including children
+        # first get the entries
+        collected_entries = {}
+        db_entries = self.get_entries_by_epcs(epcs, select_for_update=False)
+        for db_entry in db_entries:
+            # add this to the collection...
+            # if there is no top_id and it is a parent that means it's a top
+            lower_entries = self.get_entry_child_parents(db_entry)
+            collected_entries[db_entry.identifier] = db_entry
+
+            for lower_entry in lower_entries:
+                # add the children to the connection
+                collected_entries[
+                    lower_entry.identifier] = lower_entry
+                # recursively call this function for the lower entry is also
+                # a parent
+                if lower_entry.is_parent:
+                    child_entries = self.get_aggregation_parents_by_epcs(
+                        [lower_entry]
+                    )
+                    # merge the dictionaries
+                    collected_entries = {**collected_entries, **child_entries}
+        return collected_entries
+
+    def get_aggregation_events_by_epcs(self, epcs: list):
+        '''
+        When supplied with a list of top level ids or parent ids,
+        will get a list of EPCPyYes aggregation events corresponding to their
+        aggregation event history.  Useful for transmitting full histories
+        of packing, repacking, etc.
+        :param eps: The list of parents.
+        :return: A list of EPCPyYes template_event AggregationEvent instances.
+        '''
+        ret = []
+        top_entries = self.get_aggregation_parents_by_epcs(epcs)
+        # now that we have a comprehensive list of parent entries,
+        # we can get all of the aggregation events associated
+        db_events = entries.EntryEvent.objects.select_related(
+            'event'
+        ).filter(
+            entry__in=list(top_entries.values()),
+            event_type=EventTypeChoicesEnum.AGGREGATION.value,
+            is_parent=True
+        ).distinct()
+        for db_event in db_events:
+            ret.append(self._get_aggregation_event(db_event.event))
         return ret
 
     def _get_event_entries(self, db_event: events.Event):

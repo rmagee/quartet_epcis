@@ -13,10 +13,14 @@
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import os
+import logging
 from django.test import TestCase
 from quartet_epcis.models import events, choices, headers, entries
 from quartet_epcis.db_api import queries
 from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+
+logger = logging.getLogger(__name__)
 
 
 class QueriesTestCase(TestCase):
@@ -157,3 +161,40 @@ class QueriesTestCase(TestCase):
         print(parser.event_cache)
         parser.clear_cache()
         return message_id
+
+    def _parse_business_test_data(self, test_file='data/epcis.xml'):
+        curpath = os.path.dirname(__file__)
+        parser = BusinessEPCISParser(
+            os.path.join(curpath, test_file)
+        )
+        message_id = parser.parse()
+        print(parser.event_cache)
+        parser.clear_cache()
+        return message_id
+
+    def test_get_agg_events(self):
+        self._parse_business_test_data(test_file='data/commission.xml')
+        self._parse_business_test_data(test_file='data/nested_pack.xml')
+
+        db_proxy = queries.EPCISDBProxy()
+        events = db_proxy.get_aggregation_events_by_epcs(
+            ['urn:epc:id:sgtin:305555.5555555.1'])
+        self.assertEqual(len(events), 3)
+        parent_ids = [
+            'urn:epc:id:sgtin:305555.3555555.1',
+            'urn:epc:id:sgtin:305555.5555555.1',
+            'urn:epc:id:sgtin:305555.3555555.2',
+        ]
+        for event in events:
+            self.assertIn(event.parent_id, parent_ids)
+            if event.parent_id == 'urn:epc:id:sgtin:305555.5555555.1':
+                self.assertEqual(len(event.child_epcs), 2)
+            else:
+                self.assertEqual(len(event.child_epcs), 5)
+        self._parse_business_test_data(test_file='data/unpack_repack.xml')
+        events = db_proxy.get_aggregation_events_by_epcs(
+            ['urn:epc:id:sgtin:305555.5555555.1']
+        )
+        self.assertEqual(len(events), 5)
+        for event in events:
+            print(event.render())

@@ -175,7 +175,7 @@ class EntryEvent(models.Model):
     )
 
     def __str__(self):
-        return '{0}:{1}'.format(self.entry_id, self.event)
+        return self.identifier
 
     class Meta:
         verbose_name = _('Entry Event Record')
