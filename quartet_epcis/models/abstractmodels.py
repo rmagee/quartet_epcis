@@ -118,7 +118,7 @@ class EPCISBusinessEvent(EPCISEvent):
     every main EPCIS class except the TransformationEvent class.
     '''
     action = models.CharField(
-        max_length=5,
+        max_length=10,
         choices=choices.ACTION_CHOICES,
         null=False,
         help_text=_('How this event relates to the lifecycle of the '

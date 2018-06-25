@@ -58,6 +58,7 @@ class QuartetParser(EPCISParser):
         self.destination_event_cache = []
         self._message = None
 
+    @transaction.atomic
     def parse(self):
         '''
         Creates the message for use in associating events and then

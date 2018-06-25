@@ -15,6 +15,7 @@
 
 import logging
 from dateutil.parser import parse as parse_date
+from django.db import transaction
 from django.utils.translation import gettext as _
 from typing import List
 from django.db.models import QuerySet
@@ -45,6 +46,7 @@ class BusinessEPCISParser(QuartetParser):
         implicitly decommissioned when their parent or to Entry is.
         '''
         super().__init__(stream, event_cache_size)
+        self.decommissioned_entry_cache = {}
         self.recursive_decommission = recursive_decommission
 
     def handle_aggregation_event(
@@ -74,7 +76,7 @@ class BusinessEPCISParser(QuartetParser):
                 self._handle_aggregation_delete_action(db_event, epcis_event)
             self._handle_aggregation_entries(db_event, epcis_event)
             self.handle_common_elements(db_event, epcis_event)
-            self.event_cache.append(db_event)
+        self.event_cache.append(db_event)
 
     def handle_transaction_event(self,
                                  epcis_event: yes_events.TransactionEvent):
@@ -195,7 +197,7 @@ class BusinessEPCISParser(QuartetParser):
                 db_entries.append(entry)
         count = len(db_entries)
         # if nothing was found, try the database
-        if count == 0:
+        if count < len(epcis_event.child_epcs):
             kwargs = {'identifier__in': epcis_event.child_epcs,
                       'decommissioned': False,
                       'parent_id': None}
@@ -234,11 +236,34 @@ class BusinessEPCISParser(QuartetParser):
             db_entry.last_event_time = parse_date(epcis_event.event_time)
             db_entry.last_disposition = epcis_event.disposition
             db_entry.parent_id = parent
-            db_entry.save()
+            # db_entry.save()
             if db_entry.is_parent:
+                # self._update_aggregation_entries(
+                #     entries.Entry.objects.filter(parent_id=db_entry),
+                #     db_entry, db_event, epcis_event)
                 self._update_aggregation_entries(
-                    entries.Entry.objects.filter(parent_id=db_entry),
+                    self._get_child_entries(db_entry),
                     db_entry, db_event, epcis_event)
+            # make sure to keep in cache
+            self.entry_cache[db_entry.identifier] = db_entry
+
+    def _get_child_entries(self, db_entry: entries.Entry):
+        '''
+        Gets child entries for an entry from the cache first then
+        from the database in not found.
+        :param db_entry: An entry marked with is_parent = True
+        :return: A list or QuerySet of child entries.
+        '''
+        # look in the cache first
+        ret = []
+        for k, v in self.entry_cache.items():
+            if v.parent_id == db_entry:
+                ret.append(v)
+        # now get any from the db
+        db_children = db_proxy.get_entries_by_parent(db_entry)
+        for db_child in db_children:
+            ret.append(db_child)
+        return ret
 
     def _update_event_entries(
         self,
@@ -261,7 +286,7 @@ class BusinessEPCISParser(QuartetParser):
                 db_entry.last_event = db_event
                 db_entry.last_event_time = parse_date(epcis_event.event_time)
                 db_entry.last_disposition = epcis_event.disposition
-                db_entry.save()
+                # db_entry.save()
         elif isinstance(db_entries, QuerySet):
             # update the database
             count = db_entries.update(
@@ -308,7 +333,7 @@ class BusinessEPCISParser(QuartetParser):
         entry.last_event = db_event
         entry.last_event_time = parse_date(epcis_event.event_time)
         entry.last_disposition = epcis_event.disposition
-        entry.save()
+        # entry.save()
         # if its not in the cache it needs to be added
         self.entry_cache[entry.identifier] == entry
         # create an entry event and add to the cache
@@ -441,4 +466,23 @@ class BusinessEPCISParser(QuartetParser):
             entry.last_event = db_event
             entry.last_event_time = parse_date(epcis_event.event_time)
             entry.last_disposition = epcis_event.disposition
-            entry.save()
+            # remove from the main cache (so it can't be selected later)
+            # and add to the decommissioned entry cache
+            self.entry_cache.pop(entry.identifier, None)
+            self.decommissioned_entry_cache[entry.identifier] = entry
+
+    def clear_cache(self):
+        # create events
+        with transaction.atomic():
+            db_events.Event.objects.bulk_create(self.event_cache)
+            # update entries
+            for db_entry in list(self.entry_cache.values()):
+                db_entry.save()
+            # clear the event cache
+            del self.event_cache[:]
+            decommissioned_entries = list(
+                self.decommissioned_entry_cache.values())
+            for decommissioned_entry in decommissioned_entries:
+                decommissioned_entry.save()
+            decommissioned_entries.clear()
+            super().clear_cache()

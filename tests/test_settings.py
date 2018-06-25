@@ -42,29 +42,29 @@ REST_FRAMEWORK = {
     )
 }
 
-import logging
-import logging.config
-logging.basicConfig(
-    level=logging.DEBUG,
-    handlers=[logging.StreamHandler()],
-)
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    },
-}
+# import logging
+# import logging.config
+# logging.basicConfig(
+#     level=logging.DEBUG,
+#     handlers=[logging.StreamHandler()],
+# )
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#     },
+# }
 # logging.config.dictConfig(LOGGING)
 # import logging.config
 # logging.basicConfig(
@@ -89,3 +89,7 @@ LOGGING = {
 #     },
 # }
 # logging.config.dictConfig(LOGGING)
+
+
+from tests.local_settings import *
+

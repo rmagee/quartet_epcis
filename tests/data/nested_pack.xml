@@ -67,8 +67,8 @@
                 </extension>
             </AggregationEvent>
             <AggregationEvent>
-                <eventTime>2018-01-22T22:51:49.294565+00:00</eventTime>
-                <recordTime>2018-01-22T22:51:49.294565+00:00</recordTime>
+                <eventTime>2018-01-22T22:51:50.294565+00:00</eventTime>
+                <recordTime>2018-01-22T22:51:50.294565+00:00</recordTime>
                 <eventTimeZoneOffset>+00:00</eventTimeZoneOffset>
                 <parentID>urn:epc:id:sgtin:305555.3555555.2</parentID>
                 <childEPCs>
@@ -128,8 +128,8 @@
                 </extension>
             </AggregationEvent>
             <AggregationEvent>
-                <eventTime>2018-01-22T22:51:49.294565+00:00</eventTime>
-                <recordTime>2018-01-22T22:51:49.294565+00:00</recordTime>
+                <eventTime>2018-01-22T22:51:51.294565+00:00</eventTime>
+                <recordTime>2018-01-22T22:51:51.294565+00:00</recordTime>
                 <eventTimeZoneOffset>+00:00</eventTimeZoneOffset>
                 <parentID>urn:epc:id:sgtin:305555.5555555.1</parentID>
                 <childEPCs>

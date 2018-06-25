@@ -34,3 +34,5 @@ track explicit aggregation and dissagregation functions as well as maintain
 records of deleted/decommissioned events and check for events containing
 EPCs that were never commissioned.  Over 800 lines of unit testing code along
 with 30 tests now cover just the quartet_epcis parsers and API.
+* Fix to aggregation handling with a more aggressive caching strategy- all
+entries are cached until the end of processing.
