@@ -90,6 +90,7 @@ REST_FRAMEWORK = {
 # }
 # logging.config.dictConfig(LOGGING)
 
-
-from tests.local_settings import *
-
+try:
+    from tests.local_settings import *
+except ImportError:
+    pass
