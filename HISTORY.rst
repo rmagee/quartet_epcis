@@ -36,3 +36,5 @@ EPCs that were never commissioned.  Over 800 lines of unit testing code along
 with 30 tests now cover just the quartet_epcis parsers and API.
 * Fix to aggregation handling with a more aggressive caching strategy- all
 entries are cached until the end of processing.
+* Added additional ordering to models along with created and modified fields
+for the UUID based models.

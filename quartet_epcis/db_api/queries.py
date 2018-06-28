@@ -125,7 +125,8 @@ class EPCISDBProxy:
         :param identifier: The identifier field of the parent Entry.
         :return: A list of strings representing the child epcs/identifiers.
         '''
-        return entries.Entry.objects.filter(
+        func = self._update_or_filter(select_for_update)
+        return func(
             parent_id__identifier=identifier,
             decommissioned=False
         ).values_list('identifier', flat=True)
@@ -580,10 +581,13 @@ class EPCISDBProxy:
         Returns a queryset containing all child Entries for a parent level
         entry.
         :param parent_entry: The parent to retrieve the children for.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
         :return: A queryset of Entry model instances reflecting the children
         of the parent_entry.
         '''
-        return entries.Entry.objects.filter(
+        func = self._update_or_filter(select_for_update)
+        return func(
             parent_id__identifier=parent_entry,
             decommissioned=False
         )
@@ -594,10 +598,13 @@ class EPCISDBProxy:
         Returns a queryset containing all child Entries for a parent level
         entry where the children are also parents.
         :param parent_entry: The parent to retrieve the children for.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
         :return: A queryset of Entry model instances reflecting the children
         of the parent_entry that are also parents.
         '''
-        return entries.Entry.objects.filter(
+        func = self._update_or_filter(select_for_update)
+        return func(
             parent_id__identifier=parent_entry,
             is_parent=True,
             decommissioned=False
@@ -608,6 +615,8 @@ class EPCISDBProxy:
         '''
         Returns all entries that are under a top_entry.
         :param top_entry: The top-level Entry instance.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
         :return: A QuerySet of Entry instances.
         '''
         func = self._update_or_filter(select_for_update)
@@ -616,12 +625,29 @@ class EPCISDBProxy:
             decommissioned=False
         )
 
+    def get_entries_by_tops(self, top_entries: EntryList,
+                           select_for_update=True):
+        '''
+        Returns all entries that are under the list of top entries.
+        :param top_entries: The top-level Entry instances.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
+        :return: A QuerySet of Entry instances.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            top_id__in=top_entries,
+            decommissioned=False
+        )
+
+
     def _update_or_filter(self, select_for_update):
         '''
         Returns a function pointer to select for update filter or the
         regular filter function on the QuerySet of the Entry database
         model.
-        :param select_for_update:
+        :param select_for_update: Whether or not any Entries are selected
+        for update by the database.
         :return:
         '''
         if select_for_update:
@@ -662,6 +688,26 @@ class EPCISDBProxy:
             decommissioned=False,
         )
 
+    def get_top_entries(self, epcs: list, select_for_update=True):
+        '''
+        Out of a list of EPCs, will return any that are top-level entries
+        in a QuerySet for update.
+        :param epcs: A list of EPCs to inspect for is_parent=True, top_id=None
+        and parent_id=None (and not decommissioned)
+        :param select_for_update: Whether or not to select any parent entries
+        from the database for update in a transaction.
+        :return: Any EPCs that have an is_parent value of True and are not
+        decommissioned.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            identifier__in=epcs,
+            is_parent=True,
+            parent_id=None,
+            top_id=None,
+            decommissioned=False,
+        )
+
     def get_entries_by_epcs(self, epcs: list, select_for_update=True):
         '''
         Returns a queryset of Entry model instances that have identifiers
@@ -685,6 +731,36 @@ class EPCISDBProxy:
         '''
         return entries.EntryEvent.objects.prefetch_related.get(
             event=db_event)
+
+    def get_events_by_entry_list(self, entry_list: EntryList,
+                                 event_type: str=None):
+        '''
+        Based on an inbound list of entries, will find all the events
+        associated and return them as EPCPyYes events.
+        :param entry_list: A list of Entry model instances.
+        :param event_type: Specify a specific event type if you are interested
+        in returning just Aggregation events for example.  The event type
+        can be specified by using the
+        `quartet_epcis.models.choices.EventTypeChoicesEnum` enumeration.
+        For example `event_type = EventTypeChoicesEnum.Aggregation.value`
+        :return: A QuerySet of events.
+        '''
+        kwargs = {
+            'entry__in': entry_list,
+        }
+        if event_type: kwargs['event_type'] = event_type
+        db_entry_events = entries.EntryEvent.objects.filter(
+            **kwargs
+        ).prefetch_related(
+            'event'
+        ).values_list(
+            'event', flat=True
+        ).distinct()
+        db_events = events.Event.objects.filter(
+            id__in=db_entry_events
+        )
+        return [self.get_epcis_event(db_event) for db_event in db_events]
+
 
     def get_events_by_entry_identifer(self, entry_identifier: str):
         '''

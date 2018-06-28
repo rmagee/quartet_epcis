@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import uuid
+from datetime import datetime
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
@@ -39,6 +40,17 @@ class UUIDModel(models.Model):
         editable=False,
         help_text=_('Unique ID'),
         verbose_name=_('Unique ID'))
+
+    created = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Created"),
+        help_text=_("When this record was created."),
+    )
+    modified = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("Modified"),
+        help_text=_("When this record was last modified."),
+    )
 
     class Meta:
         abstract = True

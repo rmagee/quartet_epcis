@@ -46,6 +46,7 @@ class Event(abstractmodels.EPCISBusinessEvent):
         app_label = 'quartet_epcis'
         verbose_name = _('Event')
         verbose_name_plural = _('Events')
+        ordering = ['event_time']
 
 
 class TransformationID(abstractmodels.UUIDModel):

@@ -118,6 +118,7 @@ class Entry(abstractmodels.UUIDModel):
         verbose_name = _('Entry')
         verbose_name_plural = _('Entries')
         app_label = 'quartet_epcis'
+        ordering = ['created']
 
 
 class EntryEvent(models.Model):
@@ -172,6 +173,16 @@ class EntryEvent(models.Model):
         help_text=_('Whether or not the entry was the output of '
                     'a Transformation event.'),
         verbose_name=_('Transformation Output')
+    )
+    created = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Created"),
+        help_text=_("When this record was created."),
+    )
+    modified = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("Modified"),
+        help_text=_("When this record was last modified."),
     )
 
     def __str__(self):

@@ -41,7 +41,7 @@ REST_FRAMEWORK = {
         'quartet_epcis.renderers.EPCPyYesXMLRenderer',
     )
 }
-
+##### un-comment to enable local logging to standard output ######
 # import logging
 # import logging.config
 # logging.basicConfig(
@@ -65,30 +65,6 @@ REST_FRAMEWORK = {
 #         },
 #     },
 # }
-# logging.config.dictConfig(LOGGING)
-# import logging.config
-# logging.basicConfig(
-#     level=logging.DEBUG,
-#     handlers=[logging.StreamHandler()],
-# )
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'file': {
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['file'],
-#             'level': 'DEBUG',
-#             'propagate': True,
-#         },
-#     },
-# }
-# logging.config.dictConfig(LOGGING)
 
 try:
     from tests.local_settings import *
