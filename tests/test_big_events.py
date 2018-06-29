@@ -25,18 +25,19 @@ from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 db_proxy = EPCISDBProxy()
 logger = logging.getLogger(__name__)
 
-class BadRepackTestCase(TestCase):
+
+class TestLargeFile(TestCase):
     '''
     Tests the EPCIS parser's business rule enforcement.
     '''
-    def test_bad_repack(self):
+
+    def test_big_object_events(self):
         '''
-        Tries to pack an item that's already been packed.
+        Commissions 15 or so thousand epcs.
         :return:
         '''
-        self._parse_test_data()
-        with self.assertRaises(errors.InvalidAggregationEventError):
-            self._parse_test_data(test_file='data/bad_repack.xml')
+        self._parse_test_data(test_file='data/bigobject.xml')
+        print(entries.Entry.objects.all().count())
 
     def _parse_test_data(self, test_file='data/epcis.xml',
                          parser_type=BusinessEPCISParser,
@@ -52,15 +53,8 @@ class BadRepackTestCase(TestCase):
                 os.path.join(curpath, test_file),
             )
         message_id = parser.parse()
-        print(parser.event_cache)
-        parser.clear_cache()
         return message_id, parser
 
     def _get_stream(self, file_name):
         curpath = os.path.dirname(__file__)
         return os.path.join(curpath, file_name)
-
-
-
-
-
