@@ -53,7 +53,7 @@ class TestQuartet(TestCase):
     def test_a_epcis_step(self):
         curpath = os.path.dirname(__file__)
         db_task = self._create_task()
-        context = RuleContext('epcis')
+        context = RuleContext(db_task.rule.name, task_name=db_task.name)
         step = EPCISParsingStep(db_task)
         with open(os.path.join(curpath, 'data/epcis.xml')) as f:
             step.execute(f.read(),context)
