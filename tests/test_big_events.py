@@ -17,9 +17,7 @@ import os
 import logging
 from django.test import TestCase
 from quartet_epcis.db_api.queries import EPCISDBProxy
-from quartet_epcis.models import events, choices, headers, entries
-from quartet_epcis.parsing import errors
-from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.models import entries
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 
 db_proxy = EPCISDBProxy()
