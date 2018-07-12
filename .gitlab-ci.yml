@@ -38,6 +38,7 @@ pypy3_6_unit_test:
   - apt-get install -y git
   - export PYTHONPATH=$PYTHONPATH:$CI_PROJECT_DIR
   - pip install -r requirements_test.txt
+  - pip install -r requirements_pypy.txt
   - coverage run runtests.py
   - coverage report -m
   - coverage html
