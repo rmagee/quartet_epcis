@@ -38,6 +38,20 @@ python3_6_unit_test:
     paths:
       - htmlcov/
 
+pypy3_6_unit_test:
+  image: pypy:latest
+  stage: test-python
+  script:
+  - apt-get install -y git
+  - export PYTHONPATH=$PYTHONPATH:$CI_PROJECT_DIR
+  - pip install -r requirements_test.txt
+  - coverage run runtests.py
+  - coverage report -m
+  - coverage html
+  artifacts:
+    paths:
+      - htmlcov/
+
 pages:
     image: seriallab/python3.6dev
     stage: build-docs
