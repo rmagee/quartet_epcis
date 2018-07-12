@@ -37,6 +37,7 @@ class TestLargeFile(TestCase):
         self._parse_test_data(test_file='data/bigobject.xml')
         print(entries.Entry.objects.all().count())
 
+
     def _parse_test_data(self, test_file='data/epcis.xml',
                          parser_type=BusinessEPCISParser,
                          recursive_decommission=False):

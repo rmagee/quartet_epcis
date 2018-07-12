@@ -2,6 +2,11 @@
 from __future__ import unicode_literals, absolute_import
 
 import django
+import platform
+
+if platform.python_implementation() == 'PyPy':
+    from psycopg2cffi import compat
+    compat.register()
 
 DEBUG = True
 USE_TZ = True

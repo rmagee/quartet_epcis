@@ -66,11 +66,16 @@ class EPCISParsingStep(RuleStep):
         # use the quartet parser which just captures messages without
         # trying to enforce any business rules (good for testing)
         loose_enforcement = self.parameters.get('LooseEnforcement', 'False')
-        self.loose_enforcement = loose_enforcement.capitalize() == 'TRUE'
+        self.loose_enforcement = self.get_boolean_parameter(
+            'LooseEnforcement', False)
 
     @property
     def declared_parameters(self):
-        return self._declared_parameters
+        return {"LooseEnforcement": "Whether or not the parsing step should "
+                                    "simply store the events (True) or if it "
+                                    "should validate the EPCIS events using "
+                                    "business rule processing. (False). "
+                                    "Default is False"}
 
     def execute(self, data, rule_context: RuleContext):
         parser_type = QuartetParser if self.loose_enforcement else BusinessEPCISParser
@@ -79,7 +84,7 @@ class EPCISParsingStep(RuleStep):
         self.info('Parsing message %s.dat', rule_context.rule_name)
         try:
             if isinstance(data, File):
-                parser = parser_type(data) if self.loose_enforcement else EPC
+                parser = parser_type(data)
             else:
                 parser = parser_type(io.BytesIO(data))
         except TypeError:
