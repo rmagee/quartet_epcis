@@ -17,6 +17,7 @@ from typing import List
 from dateutil.parser import parse as parse_date
 from eparsecis.eparsecis import EPCISParser
 from quartet_epcis.models import events, entries, choices, headers
+from quartet_epcis.parsing import errors
 from EPCPyYes.core.v1_2 import events as yes_events
 from EPCPyYes.core.SBDH import template_sbdh
 from django.db import transaction
@@ -310,6 +311,12 @@ class QuartetParser(EPCISParser):
         for epc in epc_list:
             created = False
             entry = self.entry_cache.get(epc)
+            if entry and isinstance(epcis_event,
+                          yes_events.ObjectEvent) and \
+                epcis_event.action == yes_events.Action.add.value:
+                raise errors.CommissioningError(
+                    'The epc %s has already been commissioned.', epc
+                )
             if not entry:
                 entry, created = \
                     entries.Entry.objects.get_or_create(identifier=epc,
@@ -323,6 +330,12 @@ class QuartetParser(EPCISParser):
                     'An event was received which was temporally '
                     'out of order.  Event ID: %s' % epcis_event.event_id
                 ))
+            if not created and isinstance(epcis_event,
+                                          yes_events.ObjectEvent) and \
+                epcis_event.action == yes_events.Action.add.value:
+                raise errors.CommissioningError(
+                    'The epc %s has already been commissioned.', epc
+                )
             # set the last event pointers
             entry.last_event = db_event
             entry.last_event_time = event_time

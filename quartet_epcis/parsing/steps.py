@@ -81,7 +81,7 @@ class EPCISParsingStep(RuleStep):
         parser_type = QuartetParser if self.loose_enforcement else BusinessEPCISParser
         self.info('Loose Enforcement of busines rules set to %s',
                   self.loose_enforcement)
-        self.info('Parsing message %s.dat', rule_context.rule_name)
+        self.info('Parsing message %s.dat', rule_context.task_name)
         try:
             if isinstance(data, File):
                 parser = parser_type(data)
