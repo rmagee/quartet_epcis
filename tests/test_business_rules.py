@@ -135,6 +135,17 @@ class BusinessRulesTestCase(TestCase):
             ' they have all been decommissioned.'
         )
 
+    def test_double_decommission(self):
+        '''
+        Decommissions six entries and then verifies.
+        :return:
+        '''
+        # commission the items
+        self._parse_test_data('data/commission.xml')
+        # decommission the items
+        with self.assertRaises(errors.CommissioningError):
+            self._parse_test_data('data/commission.xml')
+
     def test_nested_pack(self):
         '''
         Packs items to cases and cases to pallet and verifies.
