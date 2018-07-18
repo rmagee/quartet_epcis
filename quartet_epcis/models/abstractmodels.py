@@ -14,12 +14,13 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import uuid
-from datetime import datetime
+from threading import Lock
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from quartet_epcis.models import choices
 from haikunator import Haikunator
+
 haiku = Haikunator()
 
 def haikunate():
@@ -28,7 +29,13 @@ def haikunate():
     it could not be used directly as a default callable for
     a django field...hence this function.
     '''
-    return haiku.haikunate(token_length=7, token_hex=True)
+    try:
+        lock = Lock()
+        lock.acquire()
+        ret = haiku.haikunate(token_length=8, token_hex=True)
+    finally:
+        lock.release()
+    return ret
 
 class UUIDModel(models.Model):
     '''

@@ -473,16 +473,15 @@ class BusinessEPCISParser(QuartetParser):
 
     def clear_cache(self):
         # create events
-        with transaction.atomic():
-            db_events.Event.objects.bulk_create(self.event_cache)
-            # update entries
-            for db_entry in list(self.entry_cache.values()):
-                db_entry.save()
-            # clear the event cache
-            del self.event_cache[:]
-            decommissioned_entries = list(
-                self.decommissioned_entry_cache.values())
-            for decommissioned_entry in decommissioned_entries:
-                decommissioned_entry.save()
-            decommissioned_entries.clear()
-            super().clear_cache()
+        db_events.Event.objects.bulk_create(self.event_cache)
+        # update entries
+        for db_entry in list(self.entry_cache.values()):
+            db_entry.save()
+        # clear the event cache
+        del self.event_cache[:]
+        decommissioned_entries = list(
+            self.decommissioned_entry_cache.values())
+        for decommissioned_entry in decommissioned_entries:
+            decommissioned_entry.save()
+        decommissioned_entries.clear()
+        super().clear_cache()

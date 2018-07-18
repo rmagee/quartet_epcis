@@ -498,57 +498,56 @@ class QuartetParser(EPCISParser):
         '''
         Calls save on all items in all of the caches.
         '''
-        with transaction.atomic():
-            logger.debug('Clear cache has been called with %s and %i '
-                         'in the event and entry caches respectively',
-                         len(self.event_cache), len(self.entry_cache))
-            events.Event.objects.bulk_create(self.event_cache)
-            logger.debug('Clearing out %s number of EntryEvents.',
-                         len(self.entry_event_cache))
-            entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
-            logger.debug('Clearing cache of %s number of quantity elements',
-                         len(self.quantity_element_cache))
-            events.QuantityElement.objects.bulk_create(
-                self.quantity_element_cache
-            )
-            logger.debug('Clearing cache of %s number of error declarations',
-                         len(self.error_declaration_cache))
-            events.ErrorDeclaration.objects.bulk_create(
-                self.error_declaration_cache
-            )
-            logger.debug(
-                'Clearing the biz transaction cache of %s transactions',
-                len(self.business_transaction_cache))
-            events.BusinessTransaction.objects.bulk_create(
-                self.business_transaction_cache
-            )
-            logger.debug('Clearing the ILMD cache of %s objects',
-                         len(self.ilmd_cache))
-            events.InstanceLotMasterData.objects.bulk_create(self.ilmd_cache)
-            logger.debug('Clearing out the source cache of %s items',
-                         len(self.source_cache))
-            events.Source.objects.bulk_create(self.source_cache)
-            logger.debug('Clearing out the destination cache of %s items',
-                         len(self.destination_cache))
-            events.Destination.objects.bulk_create(self.destination_cache)
-            logger.debug('Clearing out the source event cache.')
-            events.SourceEvent.objects.bulk_create(self.source_event_cache)
-            logger.debug('Clearing out the destination event cache.')
-            events.DestinationEvent.objects.bulk_create(
-                self.destination_event_cache
-            )
-            logger.debug('Clearing out the cache lists.')
-            del self.event_cache[:]
-            self.entry_cache.clear()
-            del self.entry_event_cache[:]
-            del self.error_declaration_cache[:]
-            del self.quantity_element_cache[:]
-            del self.business_transaction_cache[:]
-            del self.ilmd_cache[:]
-            del self.source_cache[:]
-            del self.destination_cache[:]
-            del self.source_event_cache[:]
-            del self.destination_event_cache[:]
+        logger.debug('Clear cache has been called with %s and %i '
+                     'in the event and entry caches respectively',
+                     len(self.event_cache), len(self.entry_cache))
+        events.Event.objects.bulk_create(self.event_cache)
+        logger.debug('Clearing out %s number of EntryEvents.',
+                     len(self.entry_event_cache))
+        entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
+        logger.debug('Clearing cache of %s number of quantity elements',
+                     len(self.quantity_element_cache))
+        events.QuantityElement.objects.bulk_create(
+            self.quantity_element_cache
+        )
+        logger.debug('Clearing cache of %s number of error declarations',
+                     len(self.error_declaration_cache))
+        events.ErrorDeclaration.objects.bulk_create(
+            self.error_declaration_cache
+        )
+        logger.debug(
+            'Clearing the biz transaction cache of %s transactions',
+            len(self.business_transaction_cache))
+        events.BusinessTransaction.objects.bulk_create(
+            self.business_transaction_cache
+        )
+        logger.debug('Clearing the ILMD cache of %s objects',
+                     len(self.ilmd_cache))
+        events.InstanceLotMasterData.objects.bulk_create(self.ilmd_cache)
+        logger.debug('Clearing out the source cache of %s items',
+                     len(self.source_cache))
+        events.Source.objects.bulk_create(self.source_cache)
+        logger.debug('Clearing out the destination cache of %s items',
+                     len(self.destination_cache))
+        events.Destination.objects.bulk_create(self.destination_cache)
+        logger.debug('Clearing out the source event cache.')
+        events.SourceEvent.objects.bulk_create(self.source_event_cache)
+        logger.debug('Clearing out the destination event cache.')
+        events.DestinationEvent.objects.bulk_create(
+            self.destination_event_cache
+        )
+        logger.debug('Clearing out the cache lists.')
+        del self.event_cache[:]
+        self.entry_cache.clear()
+        del self.entry_event_cache[:]
+        del self.error_declaration_cache[:]
+        del self.quantity_element_cache[:]
+        del self.business_transaction_cache[:]
+        del self.ilmd_cache[:]
+        del self.source_cache[:]
+        del self.destination_cache[:]
+        del self.source_event_cache[:]
+        del self.destination_event_cache[:]
 
     class EventOrderException(Exception):
         pass
