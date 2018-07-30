@@ -18,18 +18,31 @@ from quartet_epcis.parsing.parser import QuartetParser
 from rest_framework.test import APITestCase
 from django.urls import reverse
 from quartet_epcis.models import events, entries
-
+from quartet_epcis.management.commands.create_epcis_groups import \
+    Command
+from django.contrib.auth.models import User, Group
 
 class EPCISProxyViewTests(APITestCase):
     '''
     Tests each of the EPCISDBProxy view functions.
     '''
+    def setUp(self):
+        user = User.objects.create_user(username='testuser',
+                                        password='unittest',
+                                        email='testuser@seriallab.local')
+        Command().handle()
+        oag = Group.objects.get(name='EPCIS Access')
+        user.groups.add(oag)
+        user.save()
+        self.client.force_authenticate(user=user)
+        self.user = user
 
     def test_get_event_by_id(self):
         self._parse_test_data()
         db_event = events.Event.objects.all()[0]
         url = reverse('event-detail', args=[str(db_event.id)])
         result = self.client.get(url, format='json')
+        self.assertEqual(result.status_code, 200)
         content = json.loads(result.content.decode(result.charset))
         event = content['objectEvent']
         self.assertEqual(event['action'], 'ADD')
