@@ -30,21 +30,21 @@ class Command(BaseCommand):
         )
         if created:
             permissions = Permission.objects.filter(
-                Q(codename__endswith='_entry'),
-                Q(codename__endswith='_entryevent'),
-                Q(codename__endswith='_errordeclaration'),
-                Q(codename__endswith='_event'),
-                Q(codename__endswith='_documentidentification'),
-                Q(codename__endswith='_businesstransaction'),
-                Q(codename__endswith='_destination'),
-                Q(codename__endswith='_source'),
-                Q(codename__endswith='_instancelotmasterdata'),
-                Q(codename__endswith='_message'),
-                Q(codename__endswith='_partner'),
-                Q(codename__endswith='_quantityelement'),
-                Q(codename__endswith='_sbdh'),
-                Q(codename__endswith='_sourceevent'),
-                Q(codename__endswith='_transformationid'),
+                Q(codename__endswith='_entry') |
+                Q(codename__endswith='_entryevent') |
+                Q(codename__endswith='_errordeclaration') |
+                Q(codename__endswith='_event') |
+                Q(codename__endswith='_documentidentification') |
+                Q(codename__endswith='_businesstransaction') |
+                Q(codename__endswith='_destination') |
+                Q(codename__endswith='_source') |
+                Q(codename__endswith='_instancelotmasterdata') |
+                Q(codename__endswith='_message') |
+                Q(codename__endswith='_partner') |
+                Q(codename__endswith='_quantityelement') |
+                Q(codename__endswith='_sbdh') |
+                Q(codename__endswith='_sourceevent') |
+                Q(codename__endswith='_transformationid') |
                 Q(codename__endswith='_destinationevent')
             )
             group.permissions.set(permissions)
