@@ -2,6 +2,8 @@
 
 History
 -------
+Each release section is appended to until a minor release is created.
+Minor patches are added incrementally to the release list.
 
 0.1.0 (2017-12-07)
 ++++++++++++++++++
@@ -40,3 +42,9 @@ method on the base `quartet_capture.rules.Step` class.
   for the UUID based models.
 * Updated LooseEnforcement check on EPCIS Parsing Step to use the boolean
   parameter helper.
+
+1.2 August 14 2018
+++++++++++++++++++
+* Sorted event processing by date for both the business and standard
+qu4rtet EPCIS parsers.
+* Updated unit tests.
