@@ -284,7 +284,7 @@ class BusinessRulesTestCase(TestCase):
         self._parse_test_data('data/observe_aggregation.xml')
         self.assertEqual(entries.EntryEvent.objects.all().count(), 19)
         db_events = db_proxy.get_events_by_epc(
-            'urn:epc:id:sgtin:305555.3555555.1')
+            'urn:epc:id:sgtin:305555.0555555.1')
         self.assertEqual(len(db_events), 2)
 
     def test_pack_unpack_repack(self):
@@ -335,7 +335,6 @@ class BusinessRulesTestCase(TestCase):
             )
         message_id = parser.parse()
         print(parser.event_cache)
-        parser.clear_cache()
         return message_id, parser
 
     def _get_stream(self, file_name):

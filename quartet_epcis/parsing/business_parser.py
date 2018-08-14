@@ -61,22 +61,26 @@ class BusinessEPCISParser(QuartetParser):
         :param epcis_event: An EPCPyYes AggregationEvent instance.
         '''
         logger.debug('Handling an aggregation event.')
-        db_event = self.get_db_event(epcis_event)
-        db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
         # see what kind of agg event we have here and process accordingly
         if epcis_event.action == events.Action.observe.value:
+            # get a list of epcs
             epcs = epcis_event.child_epcs.copy()
+            # append the parent to that list if it is there
             if epcis_event.parent_id: epcs.append(epcis_event.parent_id)
+            # create entries for each epc if they already do not exist
             self._get_entries(epcs)
-            super().handle_aggregation_event(epcis_event)
+            db_event = super().handle_aggregation_event(epcis_event)
         else:
+            db_event = self.get_db_event(epcis_event)
+            db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
             if epcis_event.action == events.Action.add.value:
                 self._handle_aggregation_parent(db_event, epcis_event)
             else:
                 self._handle_aggregation_delete_action(db_event, epcis_event)
             self._handle_aggregation_entries(db_event, epcis_event)
             self.handle_common_elements(db_event, epcis_event)
-        self.event_cache.append(db_event)
+            self._append_event_to_cache(db_event)
+        return db_event
 
     def handle_transaction_event(self,
                                  epcis_event: yes_events.TransactionEvent):
@@ -111,7 +115,7 @@ class BusinessEPCISParser(QuartetParser):
             self._update_event_entries(db_entries, db_event, epcis_event)
             if epcis_event.action == events.Action.delete.value:
                 self._decommission_entries(db_entries, db_event, epcis_event)
-            self.event_cache.append(db_event)
+            self._append_event_to_cache(db_event)
             self.handle_common_elements(db_event, epcis_event)
 
     def _handle_aggregation_entries(
@@ -473,12 +477,13 @@ class BusinessEPCISParser(QuartetParser):
 
     def clear_cache(self):
         # create events
-        db_events.Event.objects.bulk_create(self.event_cache)
+        event_cache = self._get_sorted_event_cache()
+        db_events.Event.objects.bulk_create(event_cache)
         # update entries
         for db_entry in list(self.entry_cache.values()):
             db_entry.save()
         # clear the event cache
-        del self.event_cache[:]
+        self.event_cache.clear()
         decommissioned_entries = list(
             self.decommissioned_entry_cache.values())
         for decommissioned_entry in decommissioned_entries:

@@ -45,7 +45,7 @@ class QuartetParser(EPCISParser):
         to cache in memory before pushing to the back-end datastore.
         '''
         super().__init__(stream)
-        self.event_cache = []
+        self.event_cache = {}
         self.entry_cache = {}
         self.quantity_element_cache = []
         self.error_declaration_cache = []
@@ -132,7 +132,7 @@ class QuartetParser(EPCISParser):
         if epcis_event.parent_id:
             self.handle_top_level_id(epcis_event.parent_id, db_event)
         self.handle_common_elements(db_event, epcis_event)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
         if len(self.event_cache) >= self.event_cache_size:
             self.clear_cache()
         return db_event
@@ -180,7 +180,7 @@ class QuartetParser(EPCISParser):
         self.handle_entries(db_event, epcis_event.child_epcs, epcis_event)
         self.handle_common_elements(db_event, epcis_event)
         self.handle_top_level_id(epcis_event.parent_id, db_event)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
         return db_event
 
     def handle_object_event(self, epcis_event: yes_events.ObjectEvent):
@@ -198,7 +198,7 @@ class QuartetParser(EPCISParser):
         self.handle_entries(db_event, epcis_event.epc_list, epcis_event)
         self.handle_common_elements(db_event, epcis_event)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
         return db_event
 
     def handle_transformation_event(
@@ -219,7 +219,7 @@ class QuartetParser(EPCISParser):
         self.handle_entries(db_event, epcis_event.output_epc_list, epcis_event,
                             output=True)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
         return db_event
 
     def handle_common_elements(
@@ -312,7 +312,7 @@ class QuartetParser(EPCISParser):
             created = False
             entry = self.entry_cache.get(epc)
             if entry and isinstance(epcis_event,
-                          yes_events.ObjectEvent) and \
+                                    yes_events.ObjectEvent) and \
                 epcis_event.action == yes_events.Action.add.value:
                 raise errors.CommissioningError(
                     'The epc %s has already been commissioned.', epc
@@ -501,7 +501,8 @@ class QuartetParser(EPCISParser):
         logger.debug('Clear cache has been called with %s and %i '
                      'in the event and entry caches respectively',
                      len(self.event_cache), len(self.entry_cache))
-        events.Event.objects.bulk_create(self.event_cache)
+        event_cache = self._get_sorted_event_cache()
+        events.Event.objects.bulk_create(event_cache)
         logger.debug('Clearing out %s number of EntryEvents.',
                      len(self.entry_event_cache))
         entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
@@ -537,7 +538,7 @@ class QuartetParser(EPCISParser):
             self.destination_event_cache
         )
         logger.debug('Clearing out the cache lists.')
-        del self.event_cache[:]
+        self.event_cache.clear()
         self.entry_cache.clear()
         del self.entry_event_cache[:]
         del self.error_declaration_cache[:]
@@ -548,6 +549,23 @@ class QuartetParser(EPCISParser):
         del self.destination_cache[:]
         del self.source_event_cache[:]
         del self.destination_event_cache[:]
+
+    def _append_event_to_cache(self, db_event):
+        event_list = self.event_cache.get(db_event.event_time, [])
+        if len(event_list) == 0:
+            self.event_cache[db_event.event_time] = event_list
+        event_list.append(db_event)
+
+    def _get_sorted_event_cache(self):
+        # get the dates
+        dates = list(self.event_cache.keys())
+        # sort the dates
+        dates = sorted(dates)
+        # create the sorted list
+        ret = []
+        for dt in dates:
+            ret += self.event_cache.get(dt)
+        return ret
 
     class EventOrderException(Exception):
         pass
