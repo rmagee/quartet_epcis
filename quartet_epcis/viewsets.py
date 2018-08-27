@@ -23,7 +23,7 @@ class EntryViewSet(viewsets.ModelViewSet):
     '''
     queryset = entries.Entry.objects.all()
     serializer_class = serializers.EntrySerializer
-    search_fields = ['identifier']
+    search_fields = ['=identifier',]
 
 class EntryEventViewSet(viewsets.ModelViewSet):
     '''
@@ -39,9 +39,7 @@ class EventViewSet(viewsets.ModelViewSet):
     '''
     queryset = events.Event.objects.all()
     serializer_class = serializers.EventSerializer
-    search_fields = ['id', 'biz_step', 'biz_location', 'event_id',
-                     'event_time', 'record_time', 'read_point',
-                     'action', 'disposition', 'message_id']
+    search_fields = ['=event_id',]
     filter_fields = '__all__'
 
 
