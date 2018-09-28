@@ -11,7 +11,7 @@ haikunator
 django-model-utils
 djangorestframework-xml
 django-filter
-eparsecis
+eparsecis>=2.0.0
 epcpyyes
 quartet_capture
 # Additional test requirements go here

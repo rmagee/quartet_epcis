@@ -3,6 +3,6 @@ djangorestframework
 djangorestframework-xml
 bumpversion==0.5.3
 wheel==0.30.0
-eparsecis
+eparsecis>=2.0.0
 epcpyyes
 python-dateutil

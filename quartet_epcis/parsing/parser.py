@@ -15,7 +15,7 @@
 import logging
 from typing import List
 from dateutil.parser import parse as parse_date
-from eparsecis.eparsecis import EPCISParser
+from eparsecis.eparsecis import EPCISParser, FlexibleNSParser
 from quartet_epcis.models import events, entries, choices, headers
 from quartet_epcis.parsing import errors
 from EPCPyYes.core.v1_2 import events as yes_events
@@ -30,7 +30,7 @@ source_list = List[yes_events.Source]
 destination_list = List[yes_events.Destination]
 
 
-class QuartetParser(EPCISParser):
+class QuartetParser(FlexibleNSParser):
     def __init__(self, stream, event_cache_size: int = 1024):
         '''
         Initializes a new QuartetParser.  Item entries and events will

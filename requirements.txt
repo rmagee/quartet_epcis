@@ -1,4 +1,4 @@
-eparsecis
+eparsecis>=2.0.0
 epcpyyes
 djangorestframework-xml
 django-model-utils

@@ -57,6 +57,26 @@ class BusinessRulesTestCase(TestCase):
             parent_id.identifier
         )
 
+    def test_namespaced_parsing(self):
+        '''
+        Tests the same as test_business_parsing but with goofy namespace
+        declarations.
+        :return:
+        '''
+        self._parse_test_data(test_file='data/namespaced.xml')
+        # check the aggregation details
+        parent_id = entries.Entry.objects.get(
+            identifier='urn:epc:id:sgtin:305555.3555555.1')
+        db_entries = entries.Entry.objects.filter(
+            parent_id=parent_id
+        )
+        self.assertEqual(
+            db_entries.count(), 5,
+            "The entry count should have"
+            "been 5 for parent %s" % \
+            parent_id.identifier
+        )
+
     def test_uncommissioned_delete(self):
         '''
         Tries to use an uncommissioned item in an object event of
