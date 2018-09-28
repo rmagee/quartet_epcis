@@ -48,3 +48,8 @@ method on the base `quartet_capture.rules.Step` class.
 * Sorted event processing by date for both the business and standard
 qu4rtet EPCIS parsers.
 * Updated unit tests.
+
+1.3 Sept 28 2018
+++++++++++++++++
+* Added a generic EPCIS parser that finds EPCIS elements that may or
+may not contain an explicit namespace declaration.
