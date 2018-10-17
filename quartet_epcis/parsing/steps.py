@@ -88,7 +88,12 @@ class EPCISParsingStep(RuleStep):
             else:
                 parser = parser_type(io.BytesIO(data))
         except TypeError:
-            parser = parser_type(io.BytesIO(data.encode()))
+            try:
+                parser = parser_type(io.BytesIO(data.encode()))
+            except AttributeError:
+                self.error("Could not convert the data into a format that "
+                           "could be handled.")
+                raise
         parser.parse()
         self.info('Parsing complete.')
 

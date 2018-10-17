@@ -10,6 +10,9 @@ QU4RTET EPCIS
 .. image:: https://badge.fury.io/py/quartet_epcis.svg
     :target: https://badge.fury.io/py/quartet_epcis
 
+The essential component for the Open Source EPCIS QU4RTET infrastructure's
+GS1 EPCIS support.
+
 The quartet_epcis python package is a Django application that
 contains the base database models necessary for the support of
 EPCIS 1.2 data persistence to an RDBMS. The quartet_epcis.parsing
