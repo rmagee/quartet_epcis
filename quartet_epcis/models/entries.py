@@ -112,7 +112,7 @@ class Entry(abstractmodels.UUIDModel):
     )
 
     def __str__(self):
-        return str(self.identifier)
+        return self.identifier
 
     class Meta:
         verbose_name = _('Entry')
