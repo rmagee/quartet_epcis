@@ -39,7 +39,7 @@ class EPCISProxyViewTests(APITestCase):
 
     def test_get_event_by_id(self):
         self._parse_test_data()
-        db_event = events.Event.objects.all()[0]
+        db_event = events.Event.objects.all()[3]
         url = reverse('event-detail', args=[str(db_event.id)])
         result = self.client.get(url, format='json')
         self.assertEqual(result.status_code, 200)
