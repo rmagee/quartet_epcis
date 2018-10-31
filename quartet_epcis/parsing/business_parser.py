@@ -474,6 +474,13 @@ class BusinessEPCISParser(QuartetParser):
             # and add to the decommissioned entry cache
             self.entry_cache.pop(entry.identifier, None)
             self.decommissioned_entry_cache[entry.identifier] = entry
+            entry_event = entries.EntryEvent(entry=entry,
+                                            event_time=epcis_event.event_time,
+                                            event_type=db_event.type,
+                                            event=db_event,
+                                            identifier=entry.identifier,
+                                            output=False)
+            self.entry_event_cache.append(entry_event)
 
     def clear_cache(self):
         # create events

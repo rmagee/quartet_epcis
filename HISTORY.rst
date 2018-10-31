@@ -53,3 +53,4 @@ qu4rtet EPCIS parsers.
 ++++++++++++++++
 * Added a generic EPCIS parser that finds EPCIS elements that may or
 may not contain an explicit namespace declaration.
+* Changed ordering of events to be descending by event time.

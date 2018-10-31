@@ -725,12 +725,14 @@ class EPCISDBProxy:
 
     def get_entries_by_event(self, db_event: events.Event):
         '''
-        Get's all of the entries (serial numbers) for each event.
-        :param db_event: The event to retrieve the numbers for.
-        :return: A list of entry serial numbers/epcs.
+        Returns a list all of the entries (serial numbers) for each event.
+        :param db_event: The event to retrieve the entries for.
+        :return: A list of entry model instances.
         '''
-        return entries.EntryEvent.objects.prefetch_related.get(
-            event=db_event)
+        ee = entries.EntryEvent.objects.select_related('entry').filter(
+            event=db_event
+        )
+        return [e.entry for e in ee]
 
     def get_events_by_entry_list(self, entry_list: EntryList,
                                  event_type: str=None):
