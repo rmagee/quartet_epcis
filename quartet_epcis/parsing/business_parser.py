@@ -115,6 +115,16 @@ class BusinessEPCISParser(QuartetParser):
             self._update_event_entries(db_entries, db_event, epcis_event)
             if epcis_event.action == events.Action.delete.value:
                 self._decommission_entries(db_entries, db_event, epcis_event)
+            for db_entry in db_entries:
+                entryevent = entries.EntryEvent(
+                    entry=db_entry,
+                    event_time=epcis_event.event_time,
+                    event_type=db_event.type,
+                    event=db_event,
+                    identifier=db_entry.identifier,
+                    output=False
+                )
+                self.entry_event_cache.append(entryevent)
             self._append_event_to_cache(db_event)
             self.handle_common_elements(db_event, epcis_event)
 
@@ -475,11 +485,11 @@ class BusinessEPCISParser(QuartetParser):
             self.entry_cache.pop(entry.identifier, None)
             self.decommissioned_entry_cache[entry.identifier] = entry
             entry_event = entries.EntryEvent(entry=entry,
-                                            event_time=epcis_event.event_time,
-                                            event_type=db_event.type,
-                                            event=db_event,
-                                            identifier=entry.identifier,
-                                            output=False)
+                                             event_time=epcis_event.event_time,
+                                             event_type=db_event.type,
+                                             event=db_event,
+                                             identifier=entry.identifier,
+                                             output=False)
             self.entry_event_cache.append(entry_event)
 
     def clear_cache(self):

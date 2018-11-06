@@ -25,6 +25,7 @@ from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 db_proxy = EPCISDBProxy()
 logger = logging.getLogger(__name__)
 
+
 class BusinessRulesTestCase(TestCase):
     '''
     Tests the EPCIS parser's business rule enforcement.
@@ -91,6 +92,19 @@ class BusinessRulesTestCase(TestCase):
         '''
         with self.assertRaises(errors.EntryException):
             self._parse_test_data('data/uncommissioned_observe.xml')
+
+    def test_observe(self):
+        '''
+        Tries to observe an item that was never commissioned.
+        '''
+        self._parse_test_data('data/observe.xml')
+        ens = entries.EntryEvent.objects.filter(
+            entry__identifier__in =[
+                'urn:epc:id:sscc:0377713.0000000007',
+                'urn:epc:id:sscc:0377713.0000000008'
+            ]
+        )
+        self.assertEqual(ens.count(), 4)
 
     def test_uncommissioned_transaction(self):
         with self.assertRaises(errors.EntryException):
