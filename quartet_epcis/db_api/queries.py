@@ -18,6 +18,8 @@ from typing import List
 from django.db.models import Q
 from django.utils.translation import ugettext as _
 from EPCPyYes.core.v1_2 import template_events, events as pyyes_events
+from EPCPyYes.core.v1_2.CBV.instance_lot_master_data import \
+    InstanceLotMasterDataAttribute
 from EPCPyYes.core.SBDH import sbdh, template_sbdh
 from quartet_epcis.models.choices import EventTypeChoicesEnum
 from quartet_epcis.models import events, entries, headers
@@ -482,7 +484,7 @@ class EPCISDBProxy:
         '''
         ilmds = events.InstanceLotMasterData.objects.filter(event=db_event)
         return [
-            pyyes_events.InstanceLotMasterDataAttribute(
+            InstanceLotMasterDataAttribute(
                 name=ilmd.name,
                 value=ilmd.value
             )
@@ -626,7 +628,7 @@ class EPCISDBProxy:
         )
 
     def get_entries_by_tops(self, top_entries: EntryList,
-                           select_for_update=True):
+                            select_for_update=True):
         '''
         Returns all entries that are under the list of top entries.
         :param top_entries: The top-level Entry instances.
@@ -639,7 +641,6 @@ class EPCISDBProxy:
             top_id__in=top_entries,
             decommissioned=False
         )
-
 
     def _update_or_filter(self, select_for_update):
         '''
@@ -735,7 +736,7 @@ class EPCISDBProxy:
         return [e.entry for e in ee]
 
     def get_events_by_entry_list(self, entry_list: EntryList,
-                                 event_type: str=None):
+                                 event_type: str = None):
         '''
         Based on an inbound list of entries, will find all the events
         associated and return them as EPCPyYes events.
@@ -762,7 +763,6 @@ class EPCISDBProxy:
             id__in=db_entry_events
         )
         return [self.get_epcis_event(db_event) for db_event in db_events]
-
 
     def get_events_by_entry_identifer(self, entry_identifier: str):
         '''
