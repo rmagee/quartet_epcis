@@ -447,7 +447,7 @@ class BusinessEPCISParser(QuartetParser):
         if len(db_entries) != len(epcs):
             db_entries = db_proxy.get_entries_by_epcs(
                 epcs,
-                select_for_update=True
+                select_for_update=False
             )
             if db_entries.count() != len(epcs):
                 raise errors.EntryException(
