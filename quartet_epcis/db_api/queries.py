@@ -804,7 +804,7 @@ class EPCISDBProxy:
         for db_entry in db_entries:
             # add this to the collection...
             # if there is no top_id and it is a parent that means it's a top
-            lower_entries = self.get_entry_child_parents(db_entry)
+            lower_entries = self.get_entry_child_parents(db_entry, select_for_update=False)
             collected_entries[db_entry.identifier] = db_entry
 
             for lower_entry in lower_entries:
