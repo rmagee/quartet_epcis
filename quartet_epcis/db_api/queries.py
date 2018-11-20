@@ -687,6 +687,7 @@ class EPCISDBProxy:
         return func(
             is_parent=True,
             decommissioned=False,
+            identifier__in=epcs
         )
 
     def get_top_entries(self, epcs: list, select_for_update=True):
