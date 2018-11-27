@@ -6,3 +6,4 @@ wheel==0.30.0
 eparsecis>=2.0.0
 epcpyyes
 python-dateutil
+gs123
