@@ -52,15 +52,6 @@ qu4rtet EPCIS parsers.
 1.3 Sept 28 2018
 ++++++++++++++++
 * Added a generic EPCIS parser that finds EPCIS elements that may or
-  may not contain an explicit namespace declaration.
+may not contain an explicit namespace declaration.
 * Changed ordering of events to be descending by event time.
 * Fixed bug with get entries by event in the EPCISDBProxy class.
-
-2.0 December 23
-+++++++++++++++
-* New feature in Filters and Rule Filters which allows users to route
-  inbound messages to rules based on text search criteria or
-  regular expressions.
-* New feature for the watching of local directories to capture inbound
-  data via protocols that use directory-dependent mechanisms...such as
-  FTP, SFTP and WebDAV.
