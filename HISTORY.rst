@@ -55,3 +55,9 @@ qu4rtet EPCIS parsers.
 may not contain an explicit namespace declaration.
 * Changed ordering of events to be descending by event time.
 * Fixed bug with get entries by event in the EPCISDBProxy class.
+
+1.4 Jan 2 2018
+++++++++++++++
+* Added a new get_message_by_event_id to the EPCISDBProxy, which allows
+  calling parties to retrieve an entire inbound message by providing a
+  single event from that message.
