@@ -31,6 +31,21 @@ class QueriesTestCase(TestCase):
     query results into `EPCPyYes.core.v1_2.template_event` (and SBDH)
     class instances which allow for clearer code and faster development.
     '''
+    def test_get_message_by_event(self):
+        '''
+        Based on a Message model, get the full EPCIS document that
+        represents that message as it was received as EPCPyYes objects.
+        '''
+        message_id = self._parse_test_data()
+        qp = queries.EPCISDBProxy()
+        event = events.Event.objects.all()[0]
+        epcis_document = qp.get_message_by_event_id(event.id)
+        self.assertEqual(len(epcis_document.transaction_events), 1)
+        self.assertEqual(len(epcis_document.transformation_events), 1)
+        self.assertEqual(len(epcis_document.object_events), 1)
+        self.assertEqual(len(epcis_document.aggregation_events), 1)
+        self.assertIsNotNone(epcis_document.header)
+        print(epcis_document.render())
 
     def test_get_message(self):
         '''

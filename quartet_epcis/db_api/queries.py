@@ -64,10 +64,16 @@ class EPCISDBProxy:
     the EPCIS schema / XML model by converting queries for data into
     EPCPyYes objects.
     '''
+    def get_message_by_event_id(self, event_id: str, return_header=True):
+        message_id = events.Event.objects.get(
+            id = event_id
+        ).message_id
+        message = headers.Message.objects.get(id = message_id)
+        return self.get_full_message(message, return_header)
 
-    def get_full_message(self, message: headers.Message):
+    def get_full_message(self, message: headers.Message, return_header=True):
         '''
-        Returns all of the events and hethe ader in a given message as
+        Returns all of the events and the header in a given message as
         a collection of EPCPyYes class instances.
         :param message: The message to use as the lookup for the header
         and event instances.
@@ -75,13 +81,14 @@ class EPCISDBProxy:
         associated with the given message.
         '''
         document = template_events.EPCISDocument()
-        try:
-            # first get the header if there was one
-            db_header = headers.SBDH.objects.get(message=message)
-            document.header = self._get_header(db_header)
-        except SBDH.DoesNotExist:
-            logger.debug('There was no document header associated '
-                         'with message %s', message)
+        if return_header:
+            try:
+                # first get the header if there was one
+                db_header = headers.SBDH.objects.get(message=message)
+                document.header = self._get_header(db_header)
+            except SBDH.DoesNotExist:
+                logger.debug('There was no document header associated '
+                             'with message %s', message)
         # now get the events
         db_events = events.Event.objects.prefetch_related(
             'transformationid_set',
