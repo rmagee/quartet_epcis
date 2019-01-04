@@ -61,3 +61,8 @@ may not contain an explicit namespace declaration.
 * Added a new get_message_by_event_id to the EPCISDBProxy, which allows
   calling parties to retrieve an entire inbound message by providing a
   single event from that message.
+* Added an additional parser that creates a cache of EPCPyYes objects
+  in memory without storing to a database.  Also modified the QuartetParser
+  so that it puts the Message.id on the rule context after parsing a
+  full message and storing to the database.
+* Added more unit tests for the new feature/functions.
