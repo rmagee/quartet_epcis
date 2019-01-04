@@ -15,9 +15,10 @@
 import os
 import logging
 from django.test import TestCase
+from EPCPyYes.core.SBDH.template_sbdh import StandardBusinessDocumentHeader
 from quartet_epcis.models import events, choices, headers, entries
 from quartet_epcis.db_api import queries
-from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.parsing.parser import QuartetParser, EPCPyYesParser
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 
 logger = logging.getLogger(__name__)
@@ -166,6 +167,18 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.output_quantity_list), 2)
         self.assertEqual(len(event.ilmd), 2)
         print(event.render())
+
+    def test_parse_and_cache(self, test_file='data/epcis.xml'):
+        curpath = os.path.dirname(__file__)
+        parser = EPCPyYesParser(
+            os.path.join(curpath, test_file)
+        )
+        parser.parse()
+        self.assertEqual(len(parser.transformation_events), 1)
+        self.assertEqual(len(parser.object_events), 1)
+        self.assertEqual(len(parser.transaction_events), 1)
+        self.assertEqual(len(parser.aggregation_events), 1)
+        self.assertIsInstance(parser.sbdh, StandardBusinessDocumentHeader)
 
     def _parse_test_data(self, test_file='data/epcis.xml'):
         curpath = os.path.dirname(__file__)

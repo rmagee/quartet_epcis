@@ -19,6 +19,7 @@ from eparsecis.eparsecis import EPCISParser, FlexibleNSParser
 from quartet_epcis.models import events, entries, choices, headers
 from quartet_epcis.parsing import errors
 from EPCPyYes.core.v1_2 import events as yes_events
+from EPCPyYes.core.v1_2 import template_events
 from EPCPyYes.core.SBDH import template_sbdh
 from django.db import transaction
 from django.utils.translation import ugettext as _
@@ -569,3 +570,53 @@ class QuartetParser(FlexibleNSParser):
 
     class EventOrderException(Exception):
         pass
+
+
+class EPCPyYesParser(FlexibleNSParser):
+    """
+    Simply collects all parsed data into a collection of aggregation,
+    object, transaction, transformation and sbdh EPCPyYes instances
+    for use in python.  No database models are utilized and no
+    database storage takes place.  Simply a way to convert XML to EPCPyYes
+    for use in rules, plain old python or other application contexts.
+    """
+
+    def __init__(self, stream,
+                 header_namespace='http://www.unece.org/cefact/namespaces'
+                                  '/StandardBusinessDocumentHeader'):
+        super().__init__(stream, header_namespace)
+        self.aggregation_events = []
+        self.object_events = []
+        self.transformation_events = []
+        self.transaction_events = []
+        self.sbdh = None
+
+    def handle_aggregation_event(
+        self,
+        epcis_event: template_events.AggregationEvent
+    ):
+        logger.info('Adding an aggregation event.')
+        self.aggregation_events.append(epcis_event)
+
+    def handle_object_event(self, epcis_event: template_events.ObjectEvent):
+        logger.info('Adding an object event.')
+        self.object_events.append(epcis_event)
+
+    def handle_transaction_event(
+        self,
+        epcis_event: template_events.TransactionEvent
+    ):
+        logger.info('Adding a transaction event.')
+        self.transaction_events.append(epcis_event)
+
+    def handle_transformation_event(
+        self,
+        epcis_event: template_events.TransformationEvent
+    ):
+        logger.info('Adding a transformation event.')
+        self.transformation_events.append(epcis_event)
+
+    def handle_sbdh(self,
+                    header: template_sbdh.StandardBusinessDocumentHeader):
+        logger.info('Setting the header.')
+        self.sbdh = header

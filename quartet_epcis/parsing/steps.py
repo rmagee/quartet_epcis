@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import io
 
+from enum import Enum
 from quartet_capture import models
 from quartet_capture.rules import Step as RuleStep
 from quartet_capture.rules import RuleContext
@@ -22,6 +23,24 @@ from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 from django.core.files.base import File
 from quartet_capture.models import Rule, Step, StepParameter
 from django.utils.translation import gettext as _
+
+
+class ContextKeys(Enum):
+    """
+    Contains context keys that steps within this module can / will place
+    on the rule context during processing.
+
+    EPCIS_MESSAGE_ID_KEY
+    --------------------
+    This is the message id that identifies all of the events, headers and
+    entries that are parsed when the EPCISParsingStep is called.  When
+    the EPCIS parser saves entries, headers and event model instances, it
+    associates them all with an inbound message id by creating a
+    Message model instance and associating all of these other model instance
+    with that message.id property. Once the parsing step is complete it
+    will place the message id on the context using this key.
+    """
+    EPCIS_MESSAGE_ID_KEY = 'MESSAGE_ID'
 
 
 def create_rule(apps, schema_editor):
@@ -57,7 +76,8 @@ def create_rule(apps, schema_editor):
 class EPCISParsingStep(RuleStep):
     '''
     Calls the EPCIS parser as a rules.Step that can be used in the
-    quartet_capture rule engine.
+    quartet_capture rule engine.  Puts the Message id on the rule context as
+    EPCIS_MESSAGE_ID.
     '''
 
     def __init__(self, db_task: models.Task, **kwargs):
@@ -94,8 +114,16 @@ class EPCISParsingStep(RuleStep):
                 self.error("Could not convert the data into a format that "
                            "could be handled.")
                 raise
-        parser.parse()
+        # add the message id to the context
+        message_id = parser.parse()
+        self.info('Adding Message ID %s to the context under '
+                  'key MESSAGE_ID.', message_id)
+        rule_context.context[
+            ContextKeys.EPCIS_MESSAGE_ID_KEY.value
+        ] = message_id
         self.info('Parsing complete.')
 
     def on_failure(self):
         pass
+
+
