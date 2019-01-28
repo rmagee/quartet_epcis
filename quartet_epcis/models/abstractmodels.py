@@ -82,6 +82,10 @@ class SourceModel(models.Model):
                     'Transaction or Transformation.'),
         verbose_name=_('Source Event Type')
     )
+
+    def __str__(self):
+        return str(self.source_event_id) or ''
+
     class Meta:
         abstract = True
 
@@ -125,6 +129,9 @@ class EPCISEvent(UUIDModel):
         verbose_name=_('Event ID'),
         db_index=True
     )
+
+    def __str__(self):
+        return self.event_time or ''
 
     class Meta:
         abstract = True
@@ -173,6 +180,9 @@ class EPCISBusinessEvent(EPCISEvent):
                     'by a subsequent event.'),
         verbose_name=_('Business Location')
     )
+
+    def __str__(self):
+        return self.event_time or ''
 
     class Meta:
         abstract = True

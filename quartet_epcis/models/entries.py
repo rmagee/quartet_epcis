@@ -112,7 +112,7 @@ class Entry(abstractmodels.UUIDModel):
     )
 
     def __str__(self):
-        return self.identifier
+        return self.identifier or ''
 
     class Meta:
         verbose_name = _('Entry')
@@ -186,7 +186,7 @@ class EntryEvent(models.Model):
     )
 
     def __str__(self):
-        return self.identifier
+        return self.identifier or ''
 
     class Meta:
         verbose_name = _('Entry Event Record')

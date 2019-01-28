@@ -63,6 +63,9 @@ class Message(models.Model):
         verbose_name=_('Created Date')
     )
 
+    def __str__(self):
+        return str(self.id) or ''
+
     class Meta:
         app_label = 'quartet_epcis'
 
@@ -90,6 +93,9 @@ class SBDH(models.Model):
         help_text=_('The message this header was associated with.'),
         verbose_name=_('Message')
     )
+
+    def __str__(self):
+        return '%s: %s' % (self.document_identification, self.message) or ''
 
     class Meta:
         verbose_name = _('SBDH')
@@ -165,9 +171,9 @@ class Partner(models.Model):
 
     def __str__(self):
         if self.authority:
-            ret = '{0}:{1}'.format(self.authority, self.identifier)
+            ret = '{0}:{1}'.format(self.authority, self.identifier) or ''
         else:
-            ret = '{0}:{1}'.format(self.id, self.partner_type)
+            ret = '{0}:{1}'.format(self.id, self.partner_type) or ''
         return ret
 
     class Meta:
@@ -233,7 +239,7 @@ class DocumentIdentification(models.Model):
 
     def __str__(self):
         return 'Document Id {0}: {1}'.format(self.id,
-                                             self.creation_date_and_time)
+                                             self.creation_date_and_time) or ''
 
     class Meta:
         verbose_name = _('Document Identification')
