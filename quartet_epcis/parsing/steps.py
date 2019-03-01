@@ -43,7 +43,7 @@ class ContextKeys(Enum):
     EPCIS_MESSAGE_ID_KEY = 'MESSAGE_ID'
 
 
-def create_rule(apps, schema_editor):
+def create_rule():
     '''
     Creates the default rule.  Used in data-migrations.
     :return: None
