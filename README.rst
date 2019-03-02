@@ -10,7 +10,22 @@ QU4RTET EPCIS
 .. image:: https://badge.fury.io/py/quartet_epcis.svg
     :target: https://badge.fury.io/py/quartet_epcis
 
-The essential component for the Open Source EPCIS QU4RTET infrastructure's
+Built on top of the world-class EPCPyYes python package.
+Real EPCIS support for serious people running real systems.
+
+.. code-block:: text
+
+     ________  ___   ___  _______   ________  ________  ___  ________
+    |\   __  \|\  \ |\  \|\  ___ \ |\   __  \|\   ____\|\  \|\   ____\
+    \ \  \|\  \ \  \\_\  \ \   __/|\ \  \|\  \ \  \___|\ \  \ \  \___|_
+     \ \  \\\  \ \______  \ \  \_|/_\ \   ____\ \  \    \ \  \ \_____  \
+      \ \  \\\  \|_____|\  \ \  \_|\ \ \  \___|\ \  \____\ \  \|____|\  \
+       \ \_____  \     \ \__\ \_______\ \__\    \ \_______\ \__\____\_\  \
+        \|___| \__\     \|__|\|_______|\|__|     \|_______|\|__|\_________\
+              \|__|                                            \|_________|
+
+The essential component
+for the Open Source EPCIS QU4RTET infrastructure's
 GS1 EPCIS support.
 
 The quartet_epcis python package is a Django application that
@@ -61,7 +76,7 @@ Features
 * Maintains the database schema for EPCIS 1.2 support.
 * Parses EPCIS 1.2 XML streams to the configured backend database system.
 * Enforces business rules around decommissioning, commissioning, aggregation,
-disaggregation, etc.
+  disaggregation, etc.
 
 Running The Unit Tests
 ----------------------
