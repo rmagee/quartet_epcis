@@ -451,9 +451,9 @@ class BusinessEPCISParser(QuartetParser):
             )
             if db_entries.count() != len(epcs):
                 raise errors.EntryException(
-                    _('The number of entries returned does not match with '
-                      'the number requested.  This indicates that one of '
-                      'the entries has either been decommissioned or was '
+                    _('Invalid Entry.  One of the values in the '
+                      'event has either '
+                      'been decommissioned or was '
                       'never commissioned.')
                 )
         return db_entries
