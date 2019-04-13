@@ -18,7 +18,7 @@ from EPCPyYes.core.v1_2.CBV import business_steps, business_transactions, \
 from EPCPyYes.core.v1_2.events import Action
 from quartet_capture import models
 from quartet_capture.rules import RuleContext
-from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.parsing.parser import QuartetParser, JSONParser
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices
@@ -39,6 +39,13 @@ class TestQuartet(TestCase):
         parser = BusinessEPCISParser(
             os.path.join(curpath, 'data/epcis.xml')
         )
+
+    def test_a_json_parser(self):
+        curpath = os.path.dirname(__file__)
+        parser = JSONParser(
+            os.path.join(curpath, 'data/inbound.json')
+        )
+        parser.parse()
 
     def run_parser(self, parser):
         parser.parse()

@@ -13,6 +13,7 @@
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import logging
+import json
 from typing import List
 from dateutil.parser import parse as parse_date
 from eparsecis.eparsecis import EPCISParser, FlexibleNSParser
@@ -21,6 +22,7 @@ from quartet_epcis.parsing import errors
 from EPCPyYes.core.v1_2 import events as yes_events
 from EPCPyYes.core.v1_2 import template_events
 from EPCPyYes.core.SBDH import template_sbdh
+from EPCPyYes.core.v1_2 import json_decoders
 from django.db import transaction
 from django.utils.translation import ugettext as _
 
@@ -318,6 +320,14 @@ class QuartetParser(FlexibleNSParser):
                 raise errors.CommissioningError(
                     'The epc %s has already been commissioned.', epc
                 )
+            if entry and entry.last_event_time == None and isinstance(
+                epcis_event,
+                yes_events.AggregationEvent
+            ):
+                raise errors.CommissioningError('The epc %s has not been '
+                                                'commissioned and therefore '
+                                                'cannot be aggregated.' % epc
+                                                )
             if not entry:
                 entry, created = \
                     entries.Entry.objects.get_or_create(identifier=epc,
@@ -552,9 +562,20 @@ class QuartetParser(FlexibleNSParser):
         del self.destination_event_cache[:]
 
     def _append_event_to_cache(self, db_event):
+        """
+        The internal event cache is a dictionary with a key that has
+        an event time and a list as the value.  All events that share
+        that time will be consolidated into the one list under the
+        event time key.
+        :param db_event: The event to add to the cache.
+        :return: None
+        """
+        # get the list associated with the event time
         event_list = self.event_cache.get(db_event.event_time, [])
+        # if there was no list then add a new list to that key
         if len(event_list) == 0:
             self.event_cache[db_event.event_time] = event_list
+        # add the event to the existing or new list (by reference)
         event_list.append(db_event)
 
     def _get_sorted_event_cache(self):
@@ -620,3 +641,40 @@ class EPCPyYesParser(FlexibleNSParser):
                     header: template_sbdh.StandardBusinessDocumentHeader):
         logger.info('Setting the header.')
         self.sbdh = header
+
+
+class JSONParser(QuartetParser):
+
+    def parse(self):
+        self._message = headers.Message()
+        self._message.save()
+        if self.stream.startswith('/'):
+            with open(self.stream, 'r') as f:
+                self.stream = f.read()
+        jsonobj = json.loads(self.stream)
+        events = jsonobj.get('events', [])
+        if len(events) == 0:
+            raise self.NoEventsError('There were no events in the inbound'
+                                     ' JSON file.')
+        for event in events:
+            if 'objectEvent' in event:
+                decoder = json_decoders.ObjectEventDecoder(event)
+                self.handle_object_event(decoder.get_event())
+            elif 'aggregationEvent' in event:
+                decoder = json_decoders.AggregationEventDecoder(event)
+                self.handle_aggregation_event(decoder.get_event())
+            elif 'transactionEvent' in event:
+                decoder = json_decoders.TransactionEventDecoder(event)
+                self.handle_transaction_event(decoder.get_event())
+            else:
+                raise self.InvalidEventError('The JSON parser encountered an'
+                                             ' event that could not be parsed'
+                                             ' %s' % str(event))
+        self.clear_cache()
+        return self._message.id
+
+    class NoEventsError(Exception):
+        pass
+
+    class InvalidEventError(Exception):
+        pass
