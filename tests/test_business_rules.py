@@ -309,7 +309,8 @@ class BusinessRulesTestCase(TestCase):
             self._parse_test_data('data/bad_parent.xml')
 
     def test_pack_uncommissioned(self):
-        self._parse_test_data('data/pack_uncommissioned.xml')
+        with self.assertRaises(errors.InvalidAggregationEventError):
+            self._parse_test_data('data/pack_uncommissioned.xml')
 
     def test_observe_transaction(self):
         self._parse_test_data('data/commission.xml')
