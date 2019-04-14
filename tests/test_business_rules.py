@@ -308,6 +308,9 @@ class BusinessRulesTestCase(TestCase):
             self._parse_test_data('data/commission.xml')
             self._parse_test_data('data/bad_parent.xml')
 
+    def test_pack_uncommissioned(self):
+        self._parse_test_data('data/pack_uncommissioned.xml')
+
     def test_observe_transaction(self):
         self._parse_test_data('data/commission.xml')
         self._parse_test_data('data/observe_transaction.xml')

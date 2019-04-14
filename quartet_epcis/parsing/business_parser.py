@@ -151,13 +151,16 @@ class BusinessEPCISParser(QuartetParser):
                 epcis_event)
             # the count should be the same in the event and queryset
             if not count == len(epcis_event.child_epcs):
+                error_list = self._get_error_list(epcis_event, db_entries)
+                list_msg = ', '.join(error_list)
                 raise errors.InvalidAggregationEventError(
                     _('The aggregation event with parent %s '
                       'contained children '
                       'in the child_epc list that were either '
                       'never commissioned, decommissioned '
-                      'or already in another aggregation.'),
-                    epcis_event.parent_id
+                      'or already in another aggregation. '
+                      'EPC values in question: %s'),
+                    epcis_event.parent_id, list_msg
                 )
             else:
                 # ok, the count matches and they can be packed. now we
@@ -170,6 +173,25 @@ class BusinessEPCISParser(QuartetParser):
         else:
             self.handle_entries(db_event, epcis_event.child_epcs,
                                 epcis_event)
+
+    def _get_error_list(self, epcis_event: events.AggregationEvent,
+                        db_entries:EntryList):
+        """
+        If there is a commissioning issue trying to pack items, we will
+        probably want to know which EPC is the problem.  This will compare
+        the list from the cache and compare it to the epc list in an
+        aggregation event and spit out the epcs that were not in the cache
+        and / or database.
+        :param epcis_event: The aggregation event in question.
+        :param db_entries: The entries returned from the cache.
+        :return: A list of EPCs that were not in the cache or database.
+        """
+        entry_list = []
+        for entry in db_entries:
+            entry_list.append(entry.identifier)
+        epc_list = epcis_event.child_epcs
+        return list(set(epc_list) - set(entry_list))
+
 
     def create_entry_events(self, db_entries, db_event, epcis_event):
         '''
