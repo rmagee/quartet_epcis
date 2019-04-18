@@ -332,6 +332,12 @@ class QuartetParser(FlexibleNSParser):
                 entry, created = \
                     entries.Entry.objects.get_or_create(identifier=epc,
                                                         decommissioned=False)
+            if not created and isinstance(epcis_event,
+                                          yes_events.ObjectEvent) and \
+                epcis_event.action == yes_events.Action.add.value:
+                raise errors.CommissioningError(
+                    'The epc %s has already been commissioned.', epc
+                )
             # if an event is out of order but not an observation then throw
             # an out of order exception
             event_time = parse_date(epcis_event.event_time)
@@ -341,12 +347,6 @@ class QuartetParser(FlexibleNSParser):
                     'An event was received which was temporally '
                     'out of order.  Event ID: %s' % epcis_event.event_id
                 ))
-            if not created and isinstance(epcis_event,
-                                          yes_events.ObjectEvent) and \
-                epcis_event.action == yes_events.Action.add.value:
-                raise errors.CommissioningError(
-                    'The epc %s has already been commissioned.', epc
-                )
             # set the last event pointers
             entry.last_event = db_event
             entry.last_event_time = event_time

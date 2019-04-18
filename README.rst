@@ -24,9 +24,10 @@ Real EPCIS support for serious people running real systems.
         \|___| \__\     \|__|\|_______|\|__|     \|_______|\|__|\_________\
               \|__|                                            \|_________|
 
-The essential component
-for the Open Source EPCIS QU4RTET infrastructure's
-GS1 EPCIS support.
+The essential Open-Source EPCIS component for the QU4RTET traceability
+platform.
+
+For more on QU4RTET see http://www.serial-lab.com
 
 The quartet_epcis python package is a Django application that
 contains the base database models necessary for the support of

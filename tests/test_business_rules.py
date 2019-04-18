@@ -317,6 +317,9 @@ class BusinessRulesTestCase(TestCase):
         self._parse_test_data('data/observe_transaction.xml')
         self.assertEqual(entries.EntryEvent.objects.all().count(), 18)
 
+    def test_ushc(self):
+        self._parse_test_data('data/ushc_commission.xml')
+
     def test_observe_aggregation(self):
         self._parse_test_data('data/commission.xml')
         self._parse_test_data('data/observe_aggregation.xml')
