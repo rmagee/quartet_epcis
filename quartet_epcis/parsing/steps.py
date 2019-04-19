@@ -18,7 +18,7 @@ from enum import Enum
 from quartet_capture import models
 from quartet_capture.rules import Step as RuleStep
 from quartet_capture.rules import RuleContext
-from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.parsing.parser import QuartetParser, JSONParser
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
 from django.core.files.base import File
 from quartet_capture.models import Rule, Step, StepParameter
@@ -85,9 +85,9 @@ class EPCISParsingStep(RuleStep):
         # check to see which parser to use if loose enforcement, then
         # use the quartet parser which just captures messages without
         # trying to enforce any business rules (good for testing)
-        loose_enforcement = self.parameters.get('LooseEnforcement', 'False')
         self.loose_enforcement = self.get_boolean_parameter(
             'LooseEnforcement', False)
+        self.format = self.get_parameter('Format', 'XML')
 
     @property
     def declared_parameters(self):
@@ -95,10 +95,19 @@ class EPCISParsingStep(RuleStep):
                                     "simply store the events (True) or if it "
                                     "should validate the EPCIS events using "
                                     "business rule processing. (False). "
-                                    "Default is False"}
+                                    "Default is False",
+                "Format": "JSON or XML.  If set to XML, the LooseEnforcement "
+                          "parameter is examined.  If set to JSON, inbound "
+                          "data must be in the EPCPyYes JSON format and will "
+                          "be subject to strong business rule enforcement."
+                }
 
     def execute(self, data, rule_context: RuleContext):
-        parser_type = QuartetParser if self.loose_enforcement else BusinessEPCISParser
+        self.info('Inbound format is configured for %s.', self.format)
+        if self.format.upper() == 'XML':
+            parser_type = QuartetParser if self.loose_enforcement else BusinessEPCISParser
+        else:
+            parser_type = JSONParser
         self.info('Loose Enforcement of busines rules set to %s',
                   self.loose_enforcement)
         self.info('Parsing message %s.dat', rule_context.task_name)
