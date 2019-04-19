@@ -12,10 +12,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
-
 import logging
 from dateutil.parser import parse as parse_date
-from django.db import transaction
 from django.utils.translation import gettext as _
 from typing import List
 from django.db.models import QuerySet
@@ -175,7 +173,7 @@ class BusinessEPCISParser(QuartetParser):
                                 epcis_event)
 
     def _get_error_list(self, epcis_event: events.AggregationEvent,
-                        db_entries:EntryList):
+                        db_entries: EntryList):
         """
         If there is a commissioning issue trying to pack items, we will
         probably want to know which EPC is the problem.  This will compare
@@ -191,7 +189,6 @@ class BusinessEPCISParser(QuartetParser):
             entry_list.append(entry.identifier)
         epc_list = epcis_event.child_epcs
         return list(set(epc_list) - set(entry_list))
-
 
     def create_entry_events(self, db_entries, db_event, epcis_event):
         '''
@@ -529,3 +526,5 @@ class BusinessEPCISParser(QuartetParser):
             decommissioned_entry.save()
         decommissioned_entries.clear()
         super().clear_cache()
+
+

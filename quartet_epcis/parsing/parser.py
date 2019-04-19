@@ -13,16 +13,14 @@
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import logging
-import json
 from typing import List
 from dateutil.parser import parse as parse_date
-from eparsecis.eparsecis import EPCISParser, FlexibleNSParser
+from eparsecis.eparsecis import FlexibleNSParser
 from quartet_epcis.models import events, entries, choices, headers
 from quartet_epcis.parsing import errors
 from EPCPyYes.core.v1_2 import events as yes_events
 from EPCPyYes.core.v1_2 import template_events
 from EPCPyYes.core.SBDH import template_sbdh
-from EPCPyYes.core.v1_2 import json_decoders
 from django.db import transaction
 from django.utils.translation import ugettext as _
 
@@ -643,38 +641,4 @@ class EPCPyYesParser(FlexibleNSParser):
         self.sbdh = header
 
 
-class JSONParser(QuartetParser):
 
-    def parse(self):
-        self._message = headers.Message()
-        self._message.save()
-        if self.stream.startswith('/'):
-            with open(self.stream, 'r') as f:
-                self.stream = f.read()
-        jsonobj = json.loads(self.stream)
-        events = jsonobj.get('events', [])
-        if len(events) == 0:
-            raise self.NoEventsError('There were no events in the inbound'
-                                     ' JSON file.')
-        for event in events:
-            if 'objectEvent' in event:
-                decoder = json_decoders.ObjectEventDecoder(event)
-                self.handle_object_event(decoder.get_event())
-            elif 'aggregationEvent' in event:
-                decoder = json_decoders.AggregationEventDecoder(event)
-                self.handle_aggregation_event(decoder.get_event())
-            elif 'transactionEvent' in event:
-                decoder = json_decoders.TransactionEventDecoder(event)
-                self.handle_transaction_event(decoder.get_event())
-            else:
-                raise self.InvalidEventError('The JSON parser encountered an'
-                                             ' event that could not be parsed'
-                                             ' %s' % str(event))
-        self.clear_cache()
-        return self._message.id
-
-    class NoEventsError(Exception):
-        pass
-
-    class InvalidEventError(Exception):
-        pass

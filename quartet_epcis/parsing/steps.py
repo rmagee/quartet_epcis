@@ -18,8 +18,9 @@ from enum import Enum
 from quartet_capture import models
 from quartet_capture.rules import Step as RuleStep
 from quartet_capture.rules import RuleContext
-from quartet_epcis.parsing.parser import QuartetParser, JSONParser
+from quartet_epcis.parsing.parser import QuartetParser
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.json import JSONParser
 from django.core.files.base import File
 from quartet_capture.models import Rule, Step, StepParameter
 from django.utils.translation import gettext as _

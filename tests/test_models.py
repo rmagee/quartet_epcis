@@ -18,11 +18,13 @@ from EPCPyYes.core.v1_2.CBV import business_steps, business_transactions, \
 from EPCPyYes.core.v1_2.events import Action
 from quartet_capture import models
 from quartet_capture.rules import RuleContext
-from quartet_epcis.parsing.parser import QuartetParser, JSONParser
+from quartet_epcis.parsing.parser import QuartetParser
 from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.json import JSONParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices
 from quartet_epcis.db_api.queries import get_destinations, get_sources
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +65,7 @@ class TestQuartet(TestCase):
         context = RuleContext(db_task.rule.name, task_name=db_task.name)
         step = EPCISParsingStep(db_task)
         with open(os.path.join(curpath, 'data/epcis.xml')) as f:
-            step.execute(f.read(),context)
+            step.execute(f.read(), context)
         self.confirm_parents()
         self.confirm_agg_event()
         self.confirm_transaction_event()
@@ -273,7 +275,6 @@ class TestQuartet(TestCase):
             is_output=True
         )
         self.assertIsNotNone(qe2, 'Could not locate the LB quantity event.')
-
 
     def get_source_destination(self, event):
         sources = get_sources(event)
