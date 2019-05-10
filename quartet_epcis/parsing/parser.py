@@ -343,7 +343,8 @@ class QuartetParser(FlexibleNSParser):
                 event_time = parse_date(epcis_event.event_time)
             else:
                 event_time = parse_date("%sZ%s" % (
-                epcis_event.event_time, epcis_event.event_timezone_offset))
+                    epcis_event.event_time,
+                    epcis_event.event_timezone_offset))
             if not created and event_time < entry.last_event_time \
                 and db_event.action != yes_events.Action.observe.value:
                 raise self.EventOrderException(_(

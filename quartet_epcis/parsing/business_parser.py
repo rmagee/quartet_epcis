@@ -13,6 +13,7 @@
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import logging
+from datetime import datetime
 from dateutil.parser import parse as parse_date
 from django.utils.translation import gettext as _
 from typing import List
@@ -266,7 +267,7 @@ class BusinessEPCISParser(QuartetParser):
             else:
                 db_entry.top_id = parent
             db_entry.last_event = db_event
-            db_entry.last_event_time = parse_date(epcis_event.event_time)
+            db_entry.last_event_time = self._parse_date(epcis_event)
             db_entry.last_disposition = epcis_event.disposition
             db_entry.parent_id = parent
             # db_entry.save()
@@ -279,6 +280,15 @@ class BusinessEPCISParser(QuartetParser):
                     db_entry, db_event, epcis_event)
             # make sure to keep in cache
             self.entry_cache[db_entry.identifier] = db_entry
+
+    def _parse_date(self, epcis_event):
+        if epcis_event.event_timezone_offset in epcis_event.event_time:
+            event_time = parse_date(epcis_event.event_time)
+        else:
+            event_time = parse_date("%sZ%s" % (
+                epcis_event.event_time,
+                epcis_event.event_timezone_offset))
+        return event_time
 
     def _get_child_entries(self, db_entry: entries.Entry):
         '''
@@ -317,14 +327,14 @@ class BusinessEPCISParser(QuartetParser):
         if isinstance(db_entries, list):
             for db_entry in db_entries:
                 db_entry.last_event = db_event
-                db_entry.last_event_time = parse_date(epcis_event.event_time)
+                db_entry.last_event_time = self._parse_date(epcis_event)
                 db_entry.last_disposition = epcis_event.disposition
                 # db_entry.save()
         elif isinstance(db_entries, QuerySet):
             # update the database
             count = db_entries.update(
                 last_event=db_event,
-                last_event_time=parse_date(epcis_event.event_time),
+                last_event_time=self._parse_date(epcis_event),
                 last_disposition=epcis_event.disposition
             )
             if count == 0:
@@ -360,11 +370,11 @@ class BusinessEPCISParser(QuartetParser):
             )
         # set all the pointers and convienince properties on the entry
         entry.last_aggregation_event_action = epcis_event.action
-        entry.last_aggregation_event_time = parse_date(epcis_event.event_time)
+        entry.last_aggregation_event_time = self._parse_date(epcis_event)
         entry.last_aggregation_event = db_event
         entry.is_parent = True
         entry.last_event = db_event
-        entry.last_event_time = parse_date(epcis_event.event_time)
+        entry.last_event_time = self._parse_date(epcis_event)
         entry.last_disposition = epcis_event.disposition
         # entry.save()
         # if its not in the cache it needs to be added
@@ -497,7 +507,7 @@ class BusinessEPCISParser(QuartetParser):
         for entry in db_entries:
             entry.decommissioned = True
             entry.last_event = db_event
-            entry.last_event_time = parse_date(epcis_event.event_time)
+            entry.last_event_time = self._parse_date(epcis_event)
             entry.last_disposition = epcis_event.disposition
             # remove from the main cache (so it can't be selected later)
             # and add to the decommissioned entry cache
