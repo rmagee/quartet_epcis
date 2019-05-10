@@ -14,6 +14,7 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import logging
 from typing import List
+import pytz
 from dateutil.parser import parse as parse_date
 from eparsecis.eparsecis import FlexibleNSParser
 from quartet_epcis.models import events, entries, choices, headers
@@ -338,7 +339,11 @@ class QuartetParser(FlexibleNSParser):
                 )
             # if an event is out of order but not an observation then throw
             # an out of order exception
-            event_time = parse_date(epcis_event.event_time)
+            if epcis_event.event_timezone_offset in epcis_event.event_time:
+                event_time = parse_date(epcis_event.event_time)
+            else:
+                event_time = parse_date("%sZ%s" % (
+                epcis_event.event_time, epcis_event.event_timezone_offset))
             if not created and event_time < entry.last_event_time \
                 and db_event.action != yes_events.Action.observe.value:
                 raise self.EventOrderException(_(
@@ -639,6 +644,3 @@ class EPCPyYesParser(FlexibleNSParser):
                     header: template_sbdh.StandardBusinessDocumentHeader):
         logger.info('Setting the header.')
         self.sbdh = header
-
-
-
