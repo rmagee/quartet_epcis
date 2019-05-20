@@ -1,0 +1,133 @@
+{
+  "events": [
+    {
+      "objectEvent": {
+        "bizLocation": "urn:epc:id:sgln:305555.123456.0",
+        "epcList": [
+          "urn:epc:id:sgtin:305555.0555555.1",
+          "urn:epc:id:sgtin:305555.0555555.2",
+          "urn:epc:id:sgtin:305555.0555555.3",
+          "urn:epc:id:sgtin:305555.0555555.4",
+          "urn:epc:id:sgtin:305555.0555555.5",
+          "urn:epc:id:sgtin:305555.1555555.1",
+          "urn:epc:id:sgtin:305555.3555555.1",
+          "urn:epc:id:sscc:305555.10000000001"
+        ],
+        "eventID": "2b059314-46bc-4fb2-8fbf-7c8d0947af13",
+        "bizStep": "urn:epcglobal:cbv:bizstep:commissioning",
+        "errorDeclaration": {
+          "declarationTime": "2019-04-13T19:37:14.108250",
+          "correctiveEventIDs": [
+            "1d503f8e-cf6e-4b7e-bf4e-3b478ae65157",
+            "5b95bb18-bdba-4cf2-8bdb-17e6a34bb2cb"
+          ],
+          "reason": "urn:epcglobal:cbv:er:incorrect_data"
+        },
+        "id": "(None,)",
+        "recordTime": "2019-04-13T19:37:14.426640+00:00",
+        "ilmd": {
+          "itemExpirationDate": "2015-12-31",
+          "lotNumber": "DL232"
+        },
+        "quantityList": {},
+        "bizTransactionList": {
+          "urn:epcglobal:cbv:bt:0555555555555.DE45_111": "urn:epcglobal:cbv:btt:desadv",
+          "urn:epcglobal:cbv:bt:0555555555555.00001": "urn:epcglobal:cbv:btt:bol"
+        },
+        "disposition": "urn:epcglobal:cbv:disp:encoded",
+        "eventTimezoneOffset": "+00:00",
+        "sourceList": {
+          "urn:epcglobal:cbv:sdt:possessing_party": "urn:epc:id:sgln:305555.123456.0",
+          "urn:epcglobal:cbv:sdt:location": "urn:epc:id:sgln:305555.123456.12"
+        },
+        "readPoint": "urn:epc:id:sgln:305555.123456.12",
+        "destinationList": {
+          "urn:epcglobal:cbv:sdt:location": "urn:epc:id:sgln:0614141.00001.23",
+          "urn:epcglobal:cbv:sdt:owning_party": "urn:epc:id:sgln:0614141.00001.0"
+        },
+        "eventTime": "2019-04-13T19:37:14.426640+00:00",
+        "action": "ADD"
+      }
+    },
+    {
+      "aggregationEvent": {
+        "id": [
+          null
+        ],
+        "eventID": 2,
+        "eventTime": "2019-05-19T18:24:07.114518+00:00",
+        "eventTimezoneOffset": "+00:00",
+        "recordTime": "2019-05-19T18:24:07.114518+00:00",
+        "errorDeclaration": null,
+        "action": "ADD",
+        "disposition": "urn:epcglobal:cbv:disp:encoded",
+        "bizStep": "urn:epcglobal:cbv:bizstep:packing",
+        "readPoint": null,
+        "bizLocation": null,
+        "sourceList": {},
+        "destinationList": {},
+        "bizTransactionList": {},
+        "parentID": "urn:epc:id:sgtin:305555.3555555.1",
+        "childEPCs": [
+          "urn:epc:id:sgtin:305555.0555555.1",
+          "urn:epc:id:sgtin:305555.0555555.2",
+          "urn:epc:id:sgtin:305555.0555555.3",
+          "urn:epc:id:sgtin:305555.0555555.4",
+          "urn:epc:id:sgtin:305555.0555555.5"
+        ],
+        "childQuantityList": {}
+      }
+    },
+    {
+      "aggregationEvent": {
+        "id": [
+          null
+        ],
+        "eventID": 3,
+        "eventTime": "2019-05-19T18:25:07.080853+00:00",
+        "eventTimezoneOffset": "+00:00",
+        "recordTime": "2019-05-19T18:25:07.080853+00:00",
+        "errorDeclaration": null,
+        "action": "ADD",
+        "disposition": "urn:epcglobal:cbv:disp:encoded",
+        "bizStep": "urn:epcglobal:cbv:bizstep:packing",
+        "readPoint": null,
+        "bizLocation": null,
+        "sourceList": {},
+        "destinationList": {},
+        "bizTransactionList": {},
+        "parentID": "urn:epc:id:sgtin:305555.1555555.1",
+        "childEPCs": [
+          "urn:epc:id:sgtin:305555.3555555.1"
+        ],
+        "childQuantityList": {}
+      }
+    },
+    {
+      "aggregationEvent": {
+        "id": [
+          null
+        ],
+        "eventID": 4,
+        "eventTime": "2019-05-19T18:26:07.043671+00:00",
+        "eventTimezoneOffset": "+00:00",
+        "recordTime": "2019-05-19T18:26:07.043671+00:00",
+        "errorDeclaration": null,
+        "action": "ADD",
+        "disposition": "urn:epcglobal:cbv:disp:encoded",
+        "bizStep": "urn:epcglobal:cbv:bizstep:packing",
+        "readPoint": null,
+        "bizLocation": null,
+        "sourceList": {},
+        "destinationList": {},
+        "bizTransactionList": {},
+        "parentID": "urn:epc:id:sscc:305555.10000000001",
+        "childEPCs": [
+          "urn:epc:id:sgtin:305555.1555555.1"
+        ],
+        "childQuantityList": {}
+      }
+    }
+  ],
+  "createdDate": "2019-05-19T18:24:07.147688"
+}

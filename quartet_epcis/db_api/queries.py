@@ -14,14 +14,20 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import logging
+from typing import List
 from django.db.models import Q
 from django.utils.translation import ugettext as _
 from EPCPyYes.core.v1_2 import template_events, events as pyyes_events
+from EPCPyYes.core.v1_2.CBV.instance_lot_master_data import \
+    InstanceLotMasterDataAttribute
 from EPCPyYes.core.SBDH import sbdh, template_sbdh
 from quartet_epcis.models.choices import EventTypeChoicesEnum
 from quartet_epcis.models import events, entries, headers
+from quartet_epcis.parsing import errors
 
 logger = logging.getLogger(__name__)
+
+EntryList = List[entries.Entry]
 
 
 def get_sources(db_event: events.Event):
@@ -58,10 +64,16 @@ class EPCISDBProxy:
     the EPCIS schema / XML model by converting queries for data into
     EPCPyYes objects.
     '''
+    def get_message_by_event_id(self, event_id: str, return_header=True):
+        message_id = events.Event.objects.get(
+            id = event_id
+        ).message_id
+        message = headers.Message.objects.get(id = message_id)
+        return self.get_full_message(message, return_header)
 
-    def get_full_message(self, message: headers.Message):
+    def get_full_message(self, message: headers.Message, return_header=True):
         '''
-        Returns all of the events and hethe ader in a given message as
+        Returns all of the events and the header in a given message as
         a collection of EPCPyYes class instances.
         :param message: The message to use as the lookup for the header
         and event instances.
@@ -69,13 +81,14 @@ class EPCISDBProxy:
         associated with the given message.
         '''
         document = template_events.EPCISDocument()
-        try:
-            # first get the header if there was one
-            db_header = headers.SBDH.objects.get(message=message)
-            document.header = self._get_header(db_header)
-        except SBDH.DoesNotExist:
-            logger.debug('There was no document header associated '
-                         'with message %s', message)
+        if return_header:
+            try:
+                # first get the header if there was one
+                db_header = headers.SBDH.objects.get(message=message)
+                document.header = self._get_header(db_header)
+            except SBDH.DoesNotExist:
+                logger.debug('There was no document header associated '
+                             'with message %s', message)
         # now get the events
         db_events = events.Event.objects.prefetch_related(
             'transformationid_set',
@@ -98,6 +111,34 @@ class EPCISDBProxy:
             elif isinstance(event, pyyes_events.AggregationEvent):
                 document.aggregation_events.append(event)
         return document
+
+    def get_entries_by_parent_identifier(self, identifier: str,
+                                         select_for_update=True):
+        '''
+        Returns a QuerySet of entries based on the incoming identifier
+        of the parent.
+        :param identifier: The identifier field of the parent Entry.
+        :return: A QuerySet of Entry model instances.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            parent_id__identifier=identifier,
+            decommissioned=False
+        )
+
+    def get_epcs_by_parent_identifier(self, identifier: str,
+                                      select_for_update=True):
+        '''
+        Returns a list of EPCs (identifier values) based on
+        the incoming identifier of the parent.
+        :param identifier: The identifier field of the parent Entry.
+        :return: A list of strings representing the child epcs/identifiers.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            parent_id__identifier=identifier,
+            decommissioned=False
+        ).values_list('identifier', flat=True)
 
     def get_events_by_epc(self, epc: str = None, epc_pk: str = None):
         '''
@@ -143,6 +184,8 @@ class EPCISDBProxy:
         else:
             ret = None
         # proxy out the call to the specific function
+        if ret:
+            ret.id = db_event.id
         return ret
 
     def get_events_by_ilmd(self, name, value):
@@ -295,7 +338,8 @@ class EPCISDBProxy:
         :param db_event: The event
         :return:
         '''
-        logger.debug('Getting business event data for db event %s', db_event)
+        logger.debug('Getting business event data for db event %s',
+                     str(db_event.id))
         p_event.biz_location = db_event.biz_location
         p_event.read_point = db_event.read_point
         p_event.disposition = db_event.disposition
@@ -319,7 +363,8 @@ class EPCISDBProxy:
         :param p_event: The EPCPyYes event that inherits from the
         base EPCISEvent class.
         '''
-        logger.debug('Getting base epcis data for db event %s', db_event)
+        logger.debug('Getting base epcis data for db event %s',
+                     str(db_event.id))
         self.get_error_declaration(db_event, p_event)
         p_event.event_time = db_event.event_time.isoformat()
         p_event.event_timezone_offset = db_event.event_timezone_offset
@@ -446,7 +491,7 @@ class EPCISDBProxy:
         '''
         ilmds = events.InstanceLotMasterData.objects.filter(event=db_event)
         return [
-            pyyes_events.InstanceLotMasterDataAttribute(
+            InstanceLotMasterDataAttribute(
                 name=ilmd.name,
                 value=ilmd.value
             )
@@ -506,7 +551,7 @@ class EPCISDBProxy:
         xform_event = template_events.TransformationEvent()
         # get the basic EPCISEvent values
         self.get_base_epcis_event(db_event, xform_event)
-        logger.debug('Hadling a transformation event %s', db_event)
+        logger.debug('Handling a transformation event')
         xform_event.input_epc_list = self.get_input_epc_list(db_event)
         xform_event.output_epc_list = self.get_output_epc_list(db_event)
         xform_event.input_quantity_list = self.get_quantity_list(db_event)
@@ -537,16 +582,195 @@ class EPCISDBProxy:
             return tid.identifier
         except events.TransformationID.DoesNotExist:
             logger.debug('No transformation id was found for event %s',
-                         db_event)
+                         db_event.id)
+
+    def get_entries_by_parent(self, parent_entry: entries.Entry,
+                              select_for_update=True):
+        '''
+        Returns a queryset containing all child Entries for a parent level
+        entry.
+        :param parent_entry: The parent to retrieve the children for.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
+        :return: A queryset of Entry model instances reflecting the children
+        of the parent_entry.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            parent_id__identifier=parent_entry,
+            decommissioned=False
+        )
+
+    def get_entry_child_parents(self, parent_entry: entries.Entry,
+                                select_for_update=True):
+        '''
+        Returns a queryset containing all child Entries for a parent level
+        entry where the children are also parents.
+        :param parent_entry: The parent to retrieve the children for.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
+        :return: A queryset of Entry model instances reflecting the children
+        of the parent_entry that are also parents.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            parent_id__identifier=parent_entry,
+            is_parent=True,
+            decommissioned=False
+        )
+
+    def get_entries_by_top(self, top_entry: entries.Entry,
+                           select_for_update=True):
+        '''
+        Returns all entries that are under a top_entry.
+        :param top_entry: The top-level Entry instance.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
+        :return: A QuerySet of Entry instances.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            top_id=top_entry,
+            decommissioned=False
+        )
+
+    def get_entries_by_tops(self, top_entries: EntryList,
+                            select_for_update=True):
+        '''
+        Returns all entries that are under the list of top entries.
+        :param top_entries: The top-level Entry instances.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instances selected for update by the database.
+        :return: A QuerySet of Entry instances.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            top_id__in=top_entries,
+            decommissioned=False
+        )
+
+    def _update_or_filter(self, select_for_update):
+        '''
+        Returns a function pointer to select for update filter or the
+        regular filter function on the QuerySet of the Entry database
+        model.
+        :param select_for_update: Whether or not any Entries are selected
+        for update by the database.
+        :return:
+        '''
+        if select_for_update:
+            func = entries.Entry.objects.select_for_update().filter
+        else:
+            func = entries.Entry.objects.filter
+        return func
+
+    def get_entries_by_parents(self, parents: EntryList,
+                               select_for_update=True):
+        '''
+        Returns a list of entries that are children if the inbound parent
+        list.
+        :param parents: The parent ids to find children for.
+        :param select_for_update: Whether or not the returned QuerySet contains
+        model instance selected for update by the database.
+        :return: A QuerySet of Entry instances.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            parent_id__in=parents,
+            decommissioned=False
+        )
+
+    def get_parent_entries(self, epcs: list, select_for_update=True):
+        '''
+        Out of a list of EPCs, will return any that are parents in a QuerySet
+        for update.
+        :param epcs: A list of EPCs to inspect for is_parent=True
+        :param select_for_update: Whether or not to select any parent entries
+        from the database for update in a transaction.
+        :return: Any EPCs that have an is_parent value of True and are not
+        decommissioned.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            is_parent=True,
+            decommissioned=False,
+            identifier__in=epcs
+        )
+
+    def get_top_entries(self, epcs: list, select_for_update=True):
+        '''
+        Out of a list of EPCs, will return any that are top-level entries
+        in a QuerySet for update.
+        :param epcs: A list of EPCs to inspect for is_parent=True, top_id=None
+        and parent_id=None (and not decommissioned)
+        :param select_for_update: Whether or not to select any parent entries
+        from the database for update in a transaction.
+        :return: Any EPCs that have an is_parent value of True and are not
+        decommissioned.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            identifier__in=epcs,
+            is_parent=True,
+            parent_id=None,
+            top_id=None,
+            decommissioned=False,
+        )
+
+    def get_entries_by_epcs(self, epcs: list, select_for_update=True):
+        '''
+        Returns a queryset of Entry model instances that have identifiers
+        correlating to values in the `epcs` list.
+        :param epcs: The epcs to search for.
+        :param select_for_update: Whether or not to select any entries
+        from the database for update in a transaction. Default=True
+        :return: A QuerySet of Entries.
+        '''
+        func = self._update_or_filter(select_for_update)
+        return func(
+            identifier__in=epcs,
+            decommissioned=False
+        )
 
     def get_entries_by_event(self, db_event: events.Event):
         '''
-        Get's all of the entries (serial numbers) for each event.
-        :param db_event: The event to retrieve the numbers for.
-        :return: A list of entry serial numbers/epcs.
+        Returns a list all of the entries (serial numbers) for each event.
+        :param db_event: The event to retrieve the entries for.
+        :return: A list of entry model instances.
         '''
-        result = entries.EntryEvent.objects.prefetch_related.get(
-            event=db_event)
+        ee = entries.EntryEvent.objects.select_related('entry').filter(
+            event=db_event
+        )
+        return [e.entry for e in ee]
+
+    def get_events_by_entry_list(self, entry_list: EntryList,
+                                 event_type: str = None):
+        '''
+        Based on an inbound list of entries, will find all the events
+        associated and return them as EPCPyYes events.
+        :param entry_list: A list of Entry model instances.
+        :param event_type: Specify a specific event type if you are interested
+        in returning just Aggregation events for example.  The event type
+        can be specified by using the
+        `quartet_epcis.models.choices.EventTypeChoicesEnum` enumeration.
+        For example `event_type = EventTypeChoicesEnum.Aggregation.value`
+        :return: A QuerySet of events.
+        '''
+        kwargs = {
+            'entry__in': entry_list,
+        }
+        if event_type: kwargs['event_type'] = event_type
+        db_entry_events = entries.EntryEvent.objects.filter(
+            **kwargs
+        ).prefetch_related(
+            'event'
+        ).values_list(
+            'event', flat=True
+        ).distinct()
+        db_events = events.Event.objects.filter(
+            id__in=db_entry_events
+        )
+        return [self.get_epcis_event(db_event) for db_event in db_events]
 
     def get_events_by_entry_identifer(self, entry_identifier: str):
         '''
@@ -564,6 +788,69 @@ class EPCISDBProxy:
             ))
         for event in events:
             ret.append(event)
+        return ret
+
+    def get_aggregation_parents_by_epcs(self, epcs: list):
+        """
+        Will return a dictionary of EPCPyYes aggregation events
+        based on the input
+        list.  The assumption is that the list contains a number of parent
+        epc values (the identifier field in the
+        `quartet_epcis.models.entries.Entry` model.  Any children of the
+        parents will also be returned.  Basically returns everything except
+        the bottom level entries in a hierarchy.
+        :param epcs: A list of epc urns or identifiers that can be used
+        to lookup an Entry by its indentifier field.
+        :return: A dictionary of
+        `EPCPyYes.core.v1_2.template_events.AggregationEvents` with the key
+        as the identifier (urn) and the value being the event.
+        """
+        # get all the epcs including children
+        # first get the entries
+        collected_entries = {}
+        db_entries = self.get_entries_by_epcs(epcs, select_for_update=False)
+        for db_entry in db_entries:
+            # add this to the collection...
+            # if there is no top_id and it is a parent that means it's a top
+            lower_entries = self.get_entry_child_parents(db_entry, select_for_update=False)
+            collected_entries[db_entry.identifier] = db_entry
+
+            for lower_entry in lower_entries:
+                # add the children to the connection
+                collected_entries[
+                    lower_entry.identifier] = lower_entry
+                # recursively call this function for the lower entry is also
+                # a parent
+                if lower_entry.is_parent:
+                    child_entries = self.get_aggregation_parents_by_epcs(
+                        [lower_entry]
+                    )
+                    # merge the dictionaries
+                    collected_entries = {**collected_entries, **child_entries}
+        return collected_entries
+
+    def get_aggregation_events_by_epcs(self, epcs: list):
+        '''
+        When supplied with a list of top level ids or parent ids,
+        will get a list of EPCPyYes aggregation events corresponding to their
+        aggregation event history.  Useful for transmitting full histories
+        of packing, repacking, etc.
+        :param eps: The list of parents.
+        :return: A list of EPCPyYes template_event AggregationEvent instances.
+        '''
+        ret = []
+        top_entries = self.get_aggregation_parents_by_epcs(epcs)
+        # now that we have a comprehensive list of parent entries,
+        # we can get all of the aggregation events associated
+        db_events = entries.EntryEvent.objects.select_related(
+            'event'
+        ).filter(
+            entry__in=list(top_entries.values()),
+            event_type=EventTypeChoicesEnum.AGGREGATION.value,
+            is_parent=True
+        ).distinct()
+        for db_event in db_events:
+            ret.append(self._get_aggregation_event(db_event.event))
         return ret
 
     def _get_event_entries(self, db_event: events.Event):

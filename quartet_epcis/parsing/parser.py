@@ -14,11 +14,16 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import logging
 from typing import List
-from eparsecis.eparsecis import EPCISParser
+import pytz
+from dateutil.parser import parse as parse_date
+from eparsecis.eparsecis import FlexibleNSParser
 from quartet_epcis.models import events, entries, choices, headers
+from quartet_epcis.parsing import errors
 from EPCPyYes.core.v1_2 import events as yes_events
+from EPCPyYes.core.v1_2 import template_events
 from EPCPyYes.core.SBDH import template_sbdh
 from django.db import transaction
+from django.utils.translation import ugettext as _
 
 logger = logging.getLogger('quartet_epcis')
 biz_xact_list = List[yes_events.BusinessTransaction]
@@ -27,7 +32,7 @@ source_list = List[yes_events.Source]
 destination_list = List[yes_events.Destination]
 
 
-class QuartetParser(EPCISParser):
+class QuartetParser(FlexibleNSParser):
     def __init__(self, stream, event_cache_size: int = 1024):
         '''
         Initializes a new QuartetParser.  Item entries and events will
@@ -42,7 +47,7 @@ class QuartetParser(EPCISParser):
         to cache in memory before pushing to the back-end datastore.
         '''
         super().__init__(stream)
-        self.event_cache = []
+        self.event_cache = {}
         self.entry_cache = {}
         self.quantity_element_cache = []
         self.error_declaration_cache = []
@@ -56,6 +61,7 @@ class QuartetParser(EPCISParser):
         self.destination_event_cache = []
         self._message = None
 
+    @transaction.atomic
     def parse(self):
         '''
         Creates the message for use in associating events and then
@@ -110,7 +116,6 @@ class QuartetParser(EPCISParser):
                 logger.debug('Adding partner to the sbdh model instance.')
         [p.save() for p in partner_cache]
 
-
     def handle_transaction_event(
         self,
         epcis_event: yes_events.TransactionEvent
@@ -120,18 +125,19 @@ class QuartetParser(EPCISParser):
         within an EPCIS xml structure.
 
         :param epcis_event: An EPCPyYes TransactionEvent class instance.
-        :return: None
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling a transaction event.')
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.TRANSACTION.value
-        self.handle_entries(db_event, epcis_event.epc_list)
+        self.handle_entries(db_event, epcis_event.epc_list, epcis_event)
         if epcis_event.parent_id:
             self.handle_top_level_id(epcis_event.parent_id, db_event)
         self.handle_common_elements(db_event, epcis_event)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
         if len(self.event_cache) >= self.event_cache_size:
             self.clear_cache()
+        return db_event
 
     def handle_top_level_id(self, top_id, db_event):
         '''
@@ -145,11 +151,16 @@ class QuartetParser(EPCISParser):
         )
         # not in the cache then create and put in the cache
         if not entry:
-            entry = entries.Entry.objects.get_or_create(identifier=top_id)[0]
+            entry = entries.Entry.objects.get_or_create(
+                identifier=top_id,
+                decommissioned=False
+            )[0]
             self.entry_cache[entry.identifier] = entry
 
         entryevent = entries.EntryEvent(entry=entry,
                                         event=db_event,
+                                        event_time=db_event.event_time,
+                                        event_type=db_event.type,
                                         identifier=top_id,
                                         is_parent=True)
         self.entry_event_cache.append(entryevent)
@@ -163,14 +174,16 @@ class QuartetParser(EPCISParser):
         Executed when an AggregationEvent xml structure has finished parsing.
 
         :param epcis_event: An EPCPyYes AggregationEvent instance.
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling ann aggregation event.')
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.AGGREGATION.value
-        self.handle_entries(db_event, epcis_event.child_epcs)
+        self.handle_entries(db_event, epcis_event.child_epcs, epcis_event)
         self.handle_common_elements(db_event, epcis_event)
         self.handle_top_level_id(epcis_event.parent_id, db_event)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
+        return db_event
 
     def handle_object_event(self, epcis_event: yes_events.ObjectEvent):
         '''
@@ -179,14 +192,16 @@ class QuartetParser(EPCISParser):
         class instance for use.
 
         :param epcis_event: The EPCPyYes ObjectEvent.
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling an ObjectEvent...')
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.OBJECT.value
-        self.handle_entries(db_event, epcis_event.epc_list)
+        self.handle_entries(db_event, epcis_event.epc_list, epcis_event)
         self.handle_common_elements(db_event, epcis_event)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
+        return db_event
 
     def handle_transformation_event(
         self,
@@ -196,17 +211,18 @@ class QuartetParser(EPCISParser):
         Executed when a TransformationEvent xml element has completed parsing
         into a valid EPCPyYes TransformationEvent
         :param epcis_event: The EPCPyYes TransformationEvent
-        :return: None
+        :return: Returns the created Event model instance.
         '''
         logger.debug('Handling a TransformationEvent...')
         db_event = self.get_db_event(epcis_event)
         db_event.type = choices.EventTypeChoicesEnum.TRANSFORMATION.value
         self.handle_common_elements(db_event, epcis_event)
-        self.handle_entries(db_event, epcis_event.input_epc_list)
-        self.handle_entries(db_event, epcis_event.output_epc_list,
+        self.handle_entries(db_event, epcis_event.input_epc_list, epcis_event)
+        self.handle_entries(db_event, epcis_event.output_epc_list, epcis_event,
                             output=True)
         self.handle_ilmd(db_event.id, epcis_event.ilmd)
-        self.event_cache.append(db_event)
+        self._append_event_to_cache(db_event)
+        return db_event
 
     def handle_common_elements(
         self,
@@ -281,7 +297,8 @@ class QuartetParser(EPCISParser):
         return db_event
 
     def handle_entries(
-        self, db_event: str, epc_list: [],
+        self, db_event: events.Event, epc_list: [],
+        epcis_event: yes_events.EPCISEvent,
         output: bool = False
     ):
         '''
@@ -294,15 +311,78 @@ class QuartetParser(EPCISParser):
         '''
         logging.debug('Processing epc list %s', epc_list)
         for epc in epc_list:
+            created = False
             entry = self.entry_cache.get(epc)
+            if entry and isinstance(epcis_event,
+                                    yes_events.ObjectEvent) and \
+                epcis_event.action == yes_events.Action.add.value:
+                raise errors.CommissioningError(
+                    'The epc %s has already been commissioned.', epc
+                )
+            if entry and entry.last_event_time == None and isinstance(
+                epcis_event,
+                yes_events.AggregationEvent
+            ):
+                raise errors.CommissioningError('The epc %s has not been '
+                                                'commissioned and therefore '
+                                                'cannot be aggregated.' % epc
+                                                )
             if not entry:
-                entry = entries.Entry.objects.get_or_create(identifier=epc)[0]
-                self.entry_cache[entry.identifier] = entry
+                entry, created = \
+                    entries.Entry.objects.get_or_create(identifier=epc,
+                                                        decommissioned=False)
+            if not created and isinstance(epcis_event,
+                                          yes_events.ObjectEvent) and \
+                epcis_event.action == yes_events.Action.add.value:
+                raise errors.CommissioningError(
+                    'The epc %s has already been commissioned.', epc
+                )
+            # if an event is out of order but not an observation then throw
+            # an out of order exception
+            if epcis_event.event_timezone_offset in epcis_event.event_time:
+                event_time = parse_date(epcis_event.event_time)
+            else:
+                event_time = parse_date("%sZ%s" % (
+                    epcis_event.event_time,
+                    epcis_event.event_timezone_offset))
+            if not created and event_time < entry.last_event_time \
+                and db_event.action != yes_events.Action.observe.value:
+                raise self.EventOrderException(_(
+                    'An event was received which was temporally '
+                    'out of order.  Event ID: %s' % epcis_event.event_id
+                ))
+            # set the last event pointers
+            entry.last_event = db_event
+            entry.last_event_time = event_time
+            entry.last_disposition = epcis_event.disposition
+            # if this is an aggregation event and is not an observation then
+            # mark the last agg event pointer and envent type.
+            self._check_for_aggregation(db_event, entry, epcis_event)
+            entry.save()
+            self.entry_cache[entry.identifier] = entry
             entryevent = entries.EntryEvent(entry=entry,
+                                            event_time=epcis_event.event_time,
+                                            event_type=db_event.type,
                                             event=db_event,
                                             identifier=epc,
                                             output=output)
             self.entry_event_cache.append(entryevent)
+
+    def _check_for_aggregation(self, db_event, entry, epcis_event):
+        '''
+        Looks for any aggregation event that is of type ADD or DELETE and
+        marks the entry record with the event time, action and Event model
+        foreign key.
+        :param db_event: The database Event model.
+        :param entry: The new Entry instance.
+        :param epcis_event: The EPCPyYes event that is being analyzed.
+        :return: None.
+        '''
+        if db_event.type == choices.EventTypeChoicesEnum.AGGREGATION.value \
+            and db_event.action != yes_events.Action.observe.value:
+            entry.last_aggregation_event = db_event
+            entry.last_aggregation_event_time = epcis_event.event_time
+            entry.last_aggregation_event_action = epcis_event.action
 
     def handle_error_declaration(
         self,
@@ -431,56 +511,137 @@ class QuartetParser(EPCISParser):
 
     def clear_cache(self):
         '''
-        Calls save on all items in the cache
+        Calls save on all items in all of the caches.
         '''
-        with transaction.atomic():
-            logger.debug('Clear cache has been called with %s and %i '
-                         'in the event and entry caches respectively',
-                         len(self.event_cache), len(self.entry_cache))
-            events.Event.objects.bulk_create(self.event_cache)
-            logger.debug('Clearing out %s number of EntryEvents.',
-                         len(self.entry_event_cache))
-            entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
-            logger.debug('Clearing cache of %s number of quantity elements',
-                         len(self.quantity_element_cache))
-            events.QuantityElement.objects.bulk_create(
-                self.quantity_element_cache
-            )
-            logger.debug('Clearing cache of %s number of error declarations',
-                         len(self.error_declaration_cache))
-            events.ErrorDeclaration.objects.bulk_create(
-                self.error_declaration_cache
-            )
-            logger.debug(
-                'Clearing the biz transaction cache of %s transactions',
-                len(self.business_transaction_cache))
-            events.BusinessTransaction.objects.bulk_create(
-                self.business_transaction_cache
-            )
-            logger.debug('Clearing the ILMD cache of %s objects',
-                         len(self.ilmd_cache))
-            events.InstanceLotMasterData.objects.bulk_create(self.ilmd_cache)
-            logger.debug('Clearing out the source cache of %s items',
-                         len(self.source_cache))
-            events.Source.objects.bulk_create(self.source_cache)
-            logger.debug('Clearing out the destination cache of %s items',
-                         len(self.destination_cache))
-            events.Destination.objects.bulk_create(self.destination_cache)
-            logger.debug('Clearing out the source event cache.')
-            events.SourceEvent.objects.bulk_create(self.source_event_cache)
-            logger.debug('Clearing out the destination event cache.')
-            events.DestinationEvent.objects.bulk_create(
-                self.destination_event_cache
-            )
-            logger.debug('Clearing out the cache lists.')
-            del self.event_cache[:]
-            self.entry_cache.clear()
-            del self.entry_event_cache[:]
-            del self.error_declaration_cache[:]
-            del self.quantity_element_cache[:]
-            del self.business_transaction_cache[:]
-            del self.ilmd_cache[:]
-            del self.source_cache[:]
-            del self.destination_cache[:]
-            del self.source_event_cache[:]
-            del self.destination_event_cache[:]
+        logger.debug('Clear cache has been called with %s and %i '
+                     'in the event and entry caches respectively',
+                     len(self.event_cache), len(self.entry_cache))
+        event_cache = self._get_sorted_event_cache()
+        events.Event.objects.bulk_create(event_cache)
+        logger.debug('Clearing out %s number of EntryEvents.',
+                     len(self.entry_event_cache))
+        entries.EntryEvent.objects.bulk_create(self.entry_event_cache)
+        logger.debug('Clearing cache of %s number of quantity elements',
+                     len(self.quantity_element_cache))
+        events.QuantityElement.objects.bulk_create(
+            self.quantity_element_cache
+        )
+        logger.debug('Clearing cache of %s number of error declarations',
+                     len(self.error_declaration_cache))
+        events.ErrorDeclaration.objects.bulk_create(
+            self.error_declaration_cache
+        )
+        logger.debug(
+            'Clearing the biz transaction cache of %s transactions',
+            len(self.business_transaction_cache))
+        events.BusinessTransaction.objects.bulk_create(
+            self.business_transaction_cache
+        )
+        logger.debug('Clearing the ILMD cache of %s objects',
+                     len(self.ilmd_cache))
+        events.InstanceLotMasterData.objects.bulk_create(self.ilmd_cache)
+        logger.debug('Clearing out the source cache of %s items',
+                     len(self.source_cache))
+        events.Source.objects.bulk_create(self.source_cache)
+        logger.debug('Clearing out the destination cache of %s items',
+                     len(self.destination_cache))
+        events.Destination.objects.bulk_create(self.destination_cache)
+        logger.debug('Clearing out the source event cache.')
+        events.SourceEvent.objects.bulk_create(self.source_event_cache)
+        logger.debug('Clearing out the destination event cache.')
+        events.DestinationEvent.objects.bulk_create(
+            self.destination_event_cache
+        )
+        logger.debug('Clearing out the cache lists.')
+        self.event_cache.clear()
+        self.entry_cache.clear()
+        del self.entry_event_cache[:]
+        del self.error_declaration_cache[:]
+        del self.quantity_element_cache[:]
+        del self.business_transaction_cache[:]
+        del self.ilmd_cache[:]
+        del self.source_cache[:]
+        del self.destination_cache[:]
+        del self.source_event_cache[:]
+        del self.destination_event_cache[:]
+
+    def _append_event_to_cache(self, db_event):
+        """
+        The internal event cache is a dictionary with a key that has
+        an event time and a list as the value.  All events that share
+        that time will be consolidated into the one list under the
+        event time key.
+        :param db_event: The event to add to the cache.
+        :return: None
+        """
+        # get the list associated with the event time
+        event_list = self.event_cache.get(db_event.event_time, [])
+        # if there was no list then add a new list to that key
+        if len(event_list) == 0:
+            self.event_cache[db_event.event_time] = event_list
+        # add the event to the existing or new list (by reference)
+        event_list.append(db_event)
+
+    def _get_sorted_event_cache(self):
+        # get the dates
+        dates = list(self.event_cache.keys())
+        # sort the dates
+        dates = sorted(dates)
+        # create the sorted list
+        ret = []
+        for dt in dates:
+            ret += self.event_cache.get(dt)
+        return ret
+
+    class EventOrderException(Exception):
+        pass
+
+
+class EPCPyYesParser(FlexibleNSParser):
+    """
+    Simply collects all parsed data into a collection of aggregation,
+    object, transaction, transformation and sbdh EPCPyYes instances
+    for use in python.  No database models are utilized and no
+    database storage takes place.  Simply a way to convert XML to EPCPyYes
+    for use in rules, plain old python or other application contexts.
+    """
+
+    def __init__(self, stream,
+                 header_namespace='http://www.unece.org/cefact/namespaces'
+                                  '/StandardBusinessDocumentHeader'):
+        super().__init__(stream, header_namespace)
+        self.aggregation_events = []
+        self.object_events = []
+        self.transformation_events = []
+        self.transaction_events = []
+        self.sbdh = None
+
+    def handle_aggregation_event(
+        self,
+        epcis_event: template_events.AggregationEvent
+    ):
+        logger.info('Adding an aggregation event.')
+        self.aggregation_events.append(epcis_event)
+
+    def handle_object_event(self, epcis_event: template_events.ObjectEvent):
+        logger.info('Adding an object event.')
+        self.object_events.append(epcis_event)
+
+    def handle_transaction_event(
+        self,
+        epcis_event: template_events.TransactionEvent
+    ):
+        logger.info('Adding a transaction event.')
+        self.transaction_events.append(epcis_event)
+
+    def handle_transformation_event(
+        self,
+        epcis_event: template_events.TransformationEvent
+    ):
+        logger.info('Adding a transformation event.')
+        self.transformation_events.append(epcis_event)
+
+    def handle_sbdh(self,
+                    header: template_sbdh.StandardBusinessDocumentHeader):
+        logger.info('Setting the header.')
+        self.sbdh = header

@@ -4,3 +4,5 @@ djangorestframework-xml
 django-model-utils
 haikunator
 django-filter
+python-dateutil
+gs123

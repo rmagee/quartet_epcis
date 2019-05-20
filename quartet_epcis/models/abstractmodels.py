@@ -14,11 +14,13 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 import uuid
+from threading import Lock
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from quartet_epcis.models import choices
 from haikunator import Haikunator
+
 haiku = Haikunator()
 
 def haikunate():
@@ -27,7 +29,13 @@ def haikunate():
     it could not be used directly as a default callable for
     a django field...hence this function.
     '''
-    return haiku.haikunate(token_length=7, token_hex=True)
+    try:
+        lock = Lock()
+        lock.acquire()
+        ret = haiku.haikunate(token_length=8, token_hex=True)
+    finally:
+        lock.release()
+    return ret
 
 class UUIDModel(models.Model):
     '''
@@ -39,6 +47,17 @@ class UUIDModel(models.Model):
         editable=False,
         help_text=_('Unique ID'),
         verbose_name=_('Unique ID'))
+
+    created = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Created"),
+        help_text=_("When this record was created."),
+    )
+    modified = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("Modified"),
+        help_text=_("When this record was last modified."),
+    )
 
     class Meta:
         abstract = True
@@ -63,6 +82,10 @@ class SourceModel(models.Model):
                     'Transaction or Transformation.'),
         verbose_name=_('Source Event Type')
     )
+
+    def __str__(self):
+        return str(self.source_event_id) or ''
+
     class Meta:
         abstract = True
 
@@ -107,6 +130,9 @@ class EPCISEvent(UUIDModel):
         db_index=True
     )
 
+    def __str__(self):
+        return self.event_time or ''
+
     class Meta:
         abstract = True
 
@@ -118,7 +144,7 @@ class EPCISBusinessEvent(EPCISEvent):
     every main EPCIS class except the TransformationEvent class.
     '''
     action = models.CharField(
-        max_length=5,
+        max_length=10,
         choices=choices.ACTION_CHOICES,
         null=False,
         help_text=_('How this event relates to the lifecycle of the '
@@ -154,6 +180,9 @@ class EPCISBusinessEvent(EPCISEvent):
                     'by a subsequent event.'),
         verbose_name=_('Business Location')
     )
+
+    def __str__(self):
+        return self.event_time or ''
 
     class Meta:
         abstract = True

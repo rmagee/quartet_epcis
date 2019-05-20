@@ -16,10 +16,15 @@ from django.test import TestCase
 from EPCPyYes.core.v1_2.CBV import business_steps, business_transactions, \
     dispositions
 from EPCPyYes.core.v1_2.events import Action
+from quartet_capture import models
+from quartet_capture.rules import RuleContext
 from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.json import JSONParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices
 from quartet_epcis.db_api.queries import get_destinations, get_sources
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,6 +37,19 @@ class TestQuartet(TestCase):
         parser = QuartetParser(
             os.path.join(curpath, 'data/epcis.xml')
         )
+        self.run_parser(parser)
+        parser = BusinessEPCISParser(
+            os.path.join(curpath, 'data/epcis.xml')
+        )
+
+    def test_a_json_parser(self):
+        curpath = os.path.dirname(__file__)
+        parser = JSONParser(
+            os.path.join(curpath, 'data/inbound.json')
+        )
+        parser.parse()
+
+    def run_parser(self, parser):
         parser.parse()
         print(parser.event_cache)
         parser.clear_cache()
@@ -43,14 +61,42 @@ class TestQuartet(TestCase):
 
     def test_a_epcis_step(self):
         curpath = os.path.dirname(__file__)
-        step = EPCISParsingStep()
+        db_task = self._create_task()
+        context = RuleContext(db_task.rule.name, task_name=db_task.name)
+        step = EPCISParsingStep(db_task)
         with open(os.path.join(curpath, 'data/epcis.xml')) as f:
-            step.execute(f.read(),{})
+            step.execute(f.read(), context)
         self.confirm_parents()
         self.confirm_agg_event()
         self.confirm_transaction_event()
         self.confirm_object_event()
         self.confirm_transformation_event()
+
+    def _create_task(self):
+        db_task = models.Task()
+        db_task.status = 'QUEUED'
+        db_task.name = 'test'
+        db_task.rule = self._create_rule()
+        db_task.save()
+        return db_task
+
+    def _create_rule(self):
+        db_rule = models.Rule()
+        db_rule.name = 'epcis'
+        db_rule.description = 'EPCIS Parsing rule utilizing quartet_epcis.'
+        db_rule.save()
+        rp = models.RuleParameter(name='test name', value='test value',
+                                  rule=db_rule)
+        rp.save()
+        # create a new step
+        epcis_step = models.Step()
+        epcis_step.name = 'parse-epcis'
+        epcis_step.description = 'Parse the EPCIS data and store in database.'
+        epcis_step.order = 1
+        epcis_step.step_class = 'quartet_epcis.parsing.steps.EPCISParsingStep'
+        epcis_step.rule = db_rule
+        epcis_step.save()
+        return db_rule
 
     def confirm_parents(self):
         '''
@@ -60,13 +106,16 @@ class TestQuartet(TestCase):
         res = entries.EntryEvent.objects.filter(is_parent=True)
         self.assertEqual(res.count(), 2, 'There should only be '
                                          'two parent entryevents.')
+        for entry_event in res:
+            logger.debug("Entry event __str__ check %s", str(entry_event))
         logger.debug('Parent count checks out.')
-        self.confirm_two_parents()
+        self.confirm_three_parents()
 
     def confirm_object_event(self):
         item = entries.Entry.objects.get(
             identifier='urn:epc:id:sgtin:305555.0555555.1',
         )
+        logger.debug('Entry __str__ check %s', item)
         entry_events = entries.EntryEvent.objects.filter(
             identifier=item.identifier
         ).values_list('event_id')
@@ -81,8 +130,8 @@ class TestQuartet(TestCase):
         serials = entries.EntryEvent.objects.filter(
             event_id=event.id
         )
-        self.assertEqual(serials.count(), 5,
-                         'There should be five entry events'
+        self.assertEqual(serials.count(), 6,
+                         'There should be six entry events'
                          'for this event id.')
         self.check_sglns(event)
         self.get_biz_transactions(event)
@@ -227,7 +276,6 @@ class TestQuartet(TestCase):
         )
         self.assertIsNotNone(qe2, 'Could not locate the LB quantity event.')
 
-
     def get_source_destination(self, event):
         sources = get_sources(event)
         self.assertEqual(sources.count(), 2, 'There should only be two '
@@ -258,12 +306,13 @@ class TestQuartet(TestCase):
             destination='urn:epc:id:sgln:309999.111111.233'
         )
 
-    def confirm_two_parents(self):
+    def confirm_three_parents(self):
         entry = entries.Entry.objects.get(
             identifier='urn:epc:id:sgtin:305555.3555555.1',
         )
         events = entries.EntryEvent.objects.filter(entry_id=entry.id)
-        self.assertEqual(events.count(), 2)
+        # there is a third event for commissioning.
+        self.assertEqual(events.count(), 3)
 
     def confirm_business_step(self, event_id, business_step):
         pass

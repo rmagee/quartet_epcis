@@ -50,3 +50,5 @@ docs/quartet_epcis.models.rst
 docs/quartet_epcis.parsing.rst
 docs/quartet_epcis.rst
 docs/Untitled.ipynb
+tests/local_settings.py
+

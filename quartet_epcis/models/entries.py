@@ -16,7 +16,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from quartet_epcis.models import abstractmodels
+from quartet_epcis.models import abstractmodels, events
+from quartet_epcis.models.choices import EVENT_TYPE_CHOICES, ACTION_CHOICES
 
 
 class Entry(abstractmodels.UUIDModel):
@@ -32,14 +33,92 @@ class Entry(abstractmodels.UUIDModel):
         db_index=True,
         unique=True
     )
+    parent_id = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        verbose_name=_("Parent ID"),
+        related_name='parent_identifier',
+        help_text=_("The parent of this identifier (if any)."),
+        null=True
+    )
+    top_id = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        verbose_name=_("Top ID"),
+        help_text=_("The top level id (if any)."),
+        related_name='top_identifier',
+        null=True
+    )
+    last_event = models.ForeignKey(
+        'quartet_epcis.Event',
+        null=True,
+        on_delete=models.PROTECT,
+        verbose_name=_("Last Event"),
+        help_text=_("The last event to affect the status of this entry."),
+    )
+    last_event_time = models.DateTimeField(
+        verbose_name=_("Last Event Time"),
+        help_text=_("The time of the event that last affected the status of"
+                    "this entry."),
+        null=True
+    )
+    last_disposition = models.CharField(
+        max_length=150,
+        null=True,
+        help_text=_('The business condition of the objects associated '
+                    'with the EPCs, presumed to hold true until '
+                    'contradicted by a subsequent event..'),
+        verbose_name=_('Last Disposition')
+    )
+    last_aggregation_event = models.ForeignKey(
+        'quartet_epcis.Event',
+        related_name='last_agg_event',
+        null=True,
+        on_delete=models.SET_NULL,
+        verbose_name=_("Last Aggregation Event"),
+        help_text=_("Used mostly for internal tracking and performance during"
+                    "parsing.  This tracks the last aggregation event that"
+                    "affected the entry."),
+    )
+    last_aggregation_event_time = models.DateTimeField(
+        verbose_name=_("Last Aggregation Event Time"),
+        help_text=_("The time of the event that last affected the status of"
+                    "this entries hierarchical relation to other entries."),
+        null=True
+    )
+    last_aggregation_event_action = models.CharField(
+        null=True,
+        max_length=10,
+        verbose_name=_("Last Aggregation Action"),
+        help_text=_("The action (ADD or DELETE) of the last aggregation "
+                    "event that affected this entry.  Observation events "
+                    "are not noted."),
+        choices=ACTION_CHOICES
+    )
+    is_parent = models.BooleanField(
+        default=False,
+        null=False,
+        verbose_name=_("Is Parent"),
+        help_text=_("True if this entry is a parent in any hierarchies. False"
+                    "if not.")
+    )
+    decommissioned = models.BooleanField(
+        default=False,
+        null=False,
+        verbose_name=_("Decommissioned"),
+        help_text=_("Whether or not the entry has been decommissioned.  Once"
+                    "an entry is decommissioned, it can no longer take place"
+                    "in business processes."),
+    )
 
     def __str__(self):
-        return self.identifier
+        return self.identifier or ''
 
     class Meta:
         verbose_name = _('Entry')
         verbose_name_plural = _('Entries')
         app_label = 'quartet_epcis'
+        ordering = ['created']
 
 
 class EntryEvent(models.Model):
@@ -54,6 +133,20 @@ class EntryEvent(models.Model):
         db_index=True,
         on_delete=models.CASCADE
     )
+    event_type = models.CharField(
+        null=False,
+        max_length=3,
+        verbose_name=_("Event Type"),
+        help_text=_("The type of event (Aggregation, Object, Transaction or"
+                    " Transformation."),
+        choices=EVENT_TYPE_CHOICES
+    )
+    event_time = models.DateTimeField(
+        null=False,
+        help_text=_('The Event\'s eventTime.'),
+        verbose_name=_('Event Time'),
+        db_index=True
+    )
     entry = models.ForeignKey(
         'quartet_epcis.Entry',
         null=False,
@@ -67,6 +160,7 @@ class EntryEvent(models.Model):
         null=False,
         help_text=_('A redundant entry ID entry for fast event composition.'),
         verbose_name=_('EPC URN'),
+        db_index=True
     )
     is_parent = models.BooleanField(
         default=False,
@@ -80,9 +174,19 @@ class EntryEvent(models.Model):
                     'a Transformation event.'),
         verbose_name=_('Transformation Output')
     )
+    created = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Created"),
+        help_text=_("When this record was created."),
+    )
+    modified = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("Modified"),
+        help_text=_("When this record was last modified."),
+    )
 
     def __str__(self):
-        return '{0}:{1}'.format(self.entry_id, event_id)
+        return self.identifier or ''
 
     class Meta:
         verbose_name = _('Entry Event Record')

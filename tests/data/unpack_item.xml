@@ -1,0 +1,30 @@
+<epcis:EPCISDocument
+        xmlns:epcis="urn:epcglobal:epcis:xsd:1"
+        xmlns:cbvmd="urn:epcglobal:cbv:mda"
+        schemaVersion="1.2" creationDate="2018-02-27T21:52:16.416129">
+    <EPCISBody>
+        <EventList>
+            <AggregationEvent>
+                <!--Here we try to remove an item from the case in which
+                it was packed.-->
+                <eventTime>2018-01-22T22:51:49.294565+00:00</eventTime>
+                <recordTime>2018-01-22T22:51:49.294565+00:00</recordTime>
+                <eventTimeZoneOffset>+00:00</eventTimeZoneOffset>
+                <parentID>urn:epc:id:sgtin:305555.3555555.1</parentID>
+                <childEPCs>
+                    <epc>urn:epc:id:sgtin:305555.0555555.1</epc>
+                </childEPCs>
+                <action>DELETE</action>
+                <bizStep>urn:epcglobal:cbv:bizstep:unpacking</bizStep>
+                <disposition>urn:epcglobal:cbv:disp:recalled
+                </disposition>
+                <readPoint>
+                    <id>urn:epc:id:sgln:305555.123456.12</id>
+                </readPoint>
+                <bizLocation>
+                    <id>urn:epc:id:sgln:305555.123456.0</id>
+                </bizLocation>
+            </AggregationEvent>
+        </EventList>
+    </EPCISBody>
+</epcis:EPCISDocument>
