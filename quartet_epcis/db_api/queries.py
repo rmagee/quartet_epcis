@@ -566,6 +566,15 @@ class EPCISDBProxy:
             ret.append(event)
         return ret
 
+    def get_entry_by_identifier(self, identifier: str):
+        '''
+        Returns an Entry for the given epc
+        :param identifier: The Identifier, usually an EPC, for which to search.
+        :return: An Entry
+        '''
+        entry = entries.Entry.objects.get(identifier=identifier)
+        return entry
+
     def _get_event_entries(self, db_event: events.Event):
         '''
         Returns all of the entries for a given event.
