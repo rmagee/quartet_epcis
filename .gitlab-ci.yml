@@ -3,13 +3,6 @@ stages:
     - build-docs
     - pypi
 
-before_script:
-  - bash
-  - eval `ssh-agent -s`
-  - mkdir -p ~/.ssh
-  - ssh-add <(echo "$SERIALBOX_SSH_KEY") 2>/dev/null
-  - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-
 python3_5_unit_test:
   image: seriallab/python3.5dev
   stage: test-python
@@ -31,6 +24,21 @@ python3_6_unit_test:
   - apt-get install -y git
   - export PYTHONPATH=$PYTHONPATH:$CI_PROJECT_DIR
   - pip install -r requirements_test.txt
+  - coverage run runtests.py
+  - coverage report -m
+  - coverage html
+  artifacts:
+    paths:
+      - htmlcov/
+
+pypy3_6_unit_test:
+  image: pypy:latest
+  stage: test-python
+  script:
+  - apt-get install -y git
+  - export PYTHONPATH=$PYTHONPATH:$CI_PROJECT_DIR
+  - pip install -r requirements_test.txt
+  - pip install -r requirements_pypy.txt
   - coverage run runtests.py
   - coverage report -m
   - coverage html

@@ -22,7 +22,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework import status
 from EPCPyYes.core.v1_2 import template_events
 from quartet_epcis.db_api.queries import EPCISDBProxy
-from quartet_epcis.models import events, headers
+from quartet_epcis.models import events, headers, entries
 
 logger = logging.getLogger(__name__)
 EventList = List[events.Event]
@@ -50,6 +50,9 @@ class FormatHelperMixin:
 
 
 class EventDetailView(views.APIView, FormatHelperMixin):
+    # sentinal queryset for rights management
+    queryset = events.Event.objects.none()
+
     def get(self, request: Request, format=None, event_id: str = None):
         '''
         Based on an inbound event id, will return the full event data as
@@ -84,10 +87,13 @@ class EventDetailView(views.APIView, FormatHelperMixin):
         return response
 
 
+
 class EntryEventHistoryView(views.APIView, FormatHelperMixin):
     '''
     Returns all of the events associated with a given EPC/Entry.
     '''
+    # sentinal queryset for permissions
+    queryset = entries.Entry.objects.none()
 
     def get(self, request: Request, format=None, entry_pk: str = None,
             entry_identifier: str = None):
@@ -131,6 +137,7 @@ class EventsByILMDView(views.APIView, FormatHelperMixin):
     Gets all events associated with an ILMD name and value pair.
     For example Lot:2233
     '''
+    queryset = events.Event.objects.none()
 
     def get(self, request: Request, format=None, ilmd_name=None,
             ilmd_value=None):
@@ -153,6 +160,7 @@ class MessageDetail(views.APIView, FormatHelperMixin):
     '''
     Returns a list of the full EPCIS messages that were received.
     '''
+    queryset = headers.Message.objects.none()
 
     def get(self, request: Request, format=None, message_id=None):
         '''

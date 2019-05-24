@@ -60,3 +60,26 @@ quartet_epcis APIs will never know and won't break.  Secondly, the database
 layer is flattened to make the management of EPCIS data both easier from
 a development perspective and for performance, tuning and flexibility reasons.
 
+Parsing Step Settings
+=====================
+
+There is an inbound rule that accepts the following parameters:
+
+.. list-table:: Options
+    :widths: 33 33
+    :header-rows: 1
+
+    * - Name
+      - Description
+    * - LooseEnforcement
+      - True or False- default is False, if set to true, EPCIS rules are enforced.  If set to false, the assumption is that the data is well formed and the parser will not check all business rules.
+    * - Format
+      - JSON or XML.  Default is XML.  If you wish to parse inbound EPCPyYES JSON formatted EPCIS, then set this to True. The step will no longer be able to parse XML once this is set so keep that in mind when planning your step configurations.
+
+Configuring the step in a rule:
+
+Here is the *Class Path* configuration.
+
+.. code-block:: text
+
+    quartet_epcis.parsing.steps.EPCISParsingStep

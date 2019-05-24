@@ -54,13 +54,14 @@ setup(
     install_requires=[
         'eparsecis',
         'EPCPyYes',
-        'django-model-utils'
+        'django-model-utils',
+        'python-dateutil'
     ],
     license="GPLv3",
     zip_safe=False,
     keywords='seriallab quartet_epcis epcis level-4 quartet',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Framework :: Django',
         'Framework :: Django :: 2.0',
         'Intended Audience :: Healthcare Industry',

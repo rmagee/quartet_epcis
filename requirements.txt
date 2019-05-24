@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 eparsecis
+=======
+eparsecis>=2.0.0
+>>>>>>> master
 epcpyyes
 djangorestframework-xml
 django-model-utils
 haikunator
 django-filter
+python-dateutil
+gs123

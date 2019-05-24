@@ -39,10 +39,14 @@ class Event(abstractmodels.EPCISBusinessEvent):
         verbose_name=_('Message ID')
     )
 
+    def __str__(self):
+        return "%s: %s" % (self.type, self.event_time) or ''
+
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Event')
         verbose_name_plural = _('Events')
+        ordering = ['-event_time']
 
 
 class TransformationID(abstractmodels.UUIDModel):
@@ -59,6 +63,9 @@ class TransformationID(abstractmodels.UUIDModel):
         help_text=_('The Transformation event ID.'),
         verbose_name=_('TransformationID')
     )
+
+    def __str__(self):
+        return str(self.identifier) or ''
 
     class Meta:
         app_label = 'quartet_epcis'
@@ -93,6 +100,9 @@ class ErrorDeclaration(models.Model):
         help_text=_('The source event.'),
         verbose_name=_('Event')
     )
+
+    def __str__(self):
+        return str(self.declaration_time) or ''
 
     class Meta:
         app_label = 'quartet_epcis'
@@ -134,6 +144,9 @@ class QuantityElement(models.Model):
         verbose_name=_('Is Output')
     )
 
+    def __str__(self):
+        return "%s: %s" % (self.epc_class, self.quantity) or ''
+
     class Meta:
         app_label = 'quartet_epcis'
         verbose_name = _('Quantity Element')
@@ -173,7 +186,7 @@ class BusinessTransaction(models.Model):
     )
 
     def __str__(self):
-        return "%s" % self.type
+        return "%s" % self.biz_transaction or ''
 
     class Meta:
         app_label = 'quartet_epcis'
@@ -207,7 +220,7 @@ class InstanceLotMasterData(models.Model):
     )
 
     def __str__(self):
-        return "%s: %s" % (self.name, self.value)
+        return "%s: %s" % (self.name, self.value) or ''
 
     class Meta:
         app_label = 'quartet_epcis'
@@ -239,7 +252,7 @@ class Source(abstractmodels.UUIDModel):
     )
 
     def __str__(self):
-        return "%s: %s" % (self.type, self.source)
+        return "%s: %s" % (self.type, self.source) or ''
 
     class Meta:
         app_label = 'quartet_epcis'
@@ -267,6 +280,9 @@ class SourceEvent(models.Model):
         on_delete=models.CASCADE
     )
 
+    def __str__(self):
+        return "%s:%s" % (self.event, self.source) or ''
+
     class Meta:
         app_label = 'quartet_epcis'
 
@@ -291,6 +307,9 @@ class Destination(abstractmodels.UUIDModel):
         help_text=_('The Destination identifier.'),
         verbose_name=_('Destination')
     )
+
+    def __str__(self):
+        return '%s: %s' % (self.type, self.destination) or ''
 
     class Meta:
         app_label = 'quartet_epcis'
@@ -317,6 +336,9 @@ class DestinationEvent(models.Model):
         null=False,
         on_delete=models.CASCADE
     )
+
+    def __str__(self):
+        return '%s: %s' % (self.event, self.destination) or ''
 
     class Meta:
         app_label = 'quartet_epcis'

@@ -13,10 +13,15 @@
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 import os
+import logging
 from django.test import TestCase
-from quartet_epcis.models import events, choices, headers
+from EPCPyYes.core.SBDH.template_sbdh import StandardBusinessDocumentHeader
+from quartet_epcis.models import events, choices, headers, entries
 from quartet_epcis.db_api import queries
-from quartet_epcis.parsing.parser import QuartetParser
+from quartet_epcis.parsing.parser import QuartetParser, EPCPyYesParser
+from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+
+logger = logging.getLogger(__name__)
 
 
 class QueriesTestCase(TestCase):
@@ -27,6 +32,21 @@ class QueriesTestCase(TestCase):
     query results into `EPCPyYes.core.v1_2.template_event` (and SBDH)
     class instances which allow for clearer code and faster development.
     '''
+    def test_get_message_by_event(self):
+        '''
+        Based on a Message model, get the full EPCIS document that
+        represents that message as it was received as EPCPyYes objects.
+        '''
+        message_id = self._parse_test_data()
+        qp = queries.EPCISDBProxy()
+        event = events.Event.objects.all()[0]
+        epcis_document = qp.get_message_by_event_id(event.id)
+        self.assertEqual(len(epcis_document.transaction_events), 1)
+        self.assertEqual(len(epcis_document.transformation_events), 1)
+        self.assertEqual(len(epcis_document.object_events), 1)
+        self.assertEqual(len(epcis_document.aggregation_events), 1)
+        self.assertIsNotNone(epcis_document.header)
+        print(epcis_document.render())
 
     def test_get_message(self):
         '''
@@ -77,7 +97,7 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.business_transaction_list), 1)
         self.assertEqual(len(event.source_list), 2)
         self.assertEqual(len(event.destination_list), 2)
-        self.assertEqual(len(event.epc_list), 5)
+        self.assertEqual(len(event.epc_list), 6)
         self.assertEqual(len(event.ilmd), 2)
         print(event.render())
 
@@ -105,6 +125,10 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.destination_list), 2)
         self.assertEqual(len(event.child_epcs), 5)
         self.assertEqual(event.parent_id, 'urn:epc:id:sgtin:305555.3555555.1')
+        # see if we can get the entries that have this event as their
+        # last event
+        e = entries.Entry.objects.filter(last_aggregation_event=ae[0])
+        self.assertEqual(e.count(), 5)
         print(event.render())
 
     def test_get_events_by_epc(self):
@@ -144,12 +168,61 @@ class QueriesTestCase(TestCase):
         self.assertEqual(len(event.ilmd), 2)
         print(event.render())
 
-    def _parse_test_data(self):
+    def test_parse_and_cache(self, test_file='data/epcis.xml'):
+        curpath = os.path.dirname(__file__)
+        parser = EPCPyYesParser(
+            os.path.join(curpath, test_file)
+        )
+        parser.parse()
+        self.assertEqual(len(parser.transformation_events), 1)
+        self.assertEqual(len(parser.object_events), 1)
+        self.assertEqual(len(parser.transaction_events), 1)
+        self.assertEqual(len(parser.aggregation_events), 1)
+        self.assertIsInstance(parser.sbdh, StandardBusinessDocumentHeader)
+
+    def _parse_test_data(self, test_file='data/epcis.xml'):
         curpath = os.path.dirname(__file__)
         parser = QuartetParser(
-            os.path.join(curpath, 'data/epcis.xml')
+            os.path.join(curpath, test_file)
         )
         message_id = parser.parse()
         print(parser.event_cache)
         parser.clear_cache()
         return message_id
+
+    def _parse_business_test_data(self, test_file='data/epcis.xml'):
+        curpath = os.path.dirname(__file__)
+        parser = BusinessEPCISParser(
+            os.path.join(curpath, test_file)
+        )
+        message_id = parser.parse()
+        print(parser.event_cache)
+        parser.clear_cache()
+        return message_id
+
+    def test_get_agg_events(self):
+        self._parse_business_test_data(test_file='data/commission.xml')
+        self._parse_business_test_data(test_file='data/nested_pack.xml')
+
+        db_proxy = queries.EPCISDBProxy()
+        events = db_proxy.get_aggregation_events_by_epcs(
+            ['urn:epc:id:sgtin:305555.5555555.1'])
+        self.assertEqual(len(events), 3)
+        parent_ids = [
+            'urn:epc:id:sgtin:305555.3555555.1',
+            'urn:epc:id:sgtin:305555.5555555.1',
+            'urn:epc:id:sgtin:305555.3555555.2',
+        ]
+        for event in events:
+            self.assertIn(event.parent_id, parent_ids)
+            if event.parent_id == 'urn:epc:id:sgtin:305555.5555555.1':
+                self.assertEqual(len(event.child_epcs), 2)
+            else:
+                self.assertEqual(len(event.child_epcs), 5)
+        self._parse_business_test_data(test_file='data/unpack_repack.xml')
+        events = db_proxy.get_aggregation_events_by_epcs(
+            ['urn:epc:id:sgtin:305555.5555555.1']
+        )
+        self.assertEqual(len(events), 5)
+        for event in events:
+            print(event.render())

@@ -2,6 +2,11 @@
 from __future__ import unicode_literals, absolute_import
 
 import django
+import platform
+
+if platform.python_implementation() == 'PyPy':
+    from psycopg2cffi import compat
+    compat.register()
 
 DEBUG = True
 USE_TZ = True
@@ -13,6 +18,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": ":memory:",
+        #"NAME": "epcistest.db",
     }
 }
 
@@ -38,10 +44,19 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
         'quartet_epcis.renderers.EPCPyYesXMLRenderer',
-    )
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication'
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.DjangoModelPermissions'
+    ),
 }
-
-import logging
+##### un-comment to enable local logging to standard output ######
+# import logging
 # import logging.config
 # logging.basicConfig(
 #     level=logging.DEBUG,
@@ -64,4 +79,8 @@ import logging
 #         },
 #     },
 # }
-# logging.config.dictConfig(LOGGING)
+
+try:
+    from tests.local_settings import *
+except ImportError:
+    pass
