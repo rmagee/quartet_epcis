@@ -15,6 +15,7 @@
 import logging
 from typing import List
 import pytz
+from datetime import datetime
 from dateutil.parser import parse as parse_date
 from eparsecis.eparsecis import FlexibleNSParser
 from quartet_epcis.models import events, entries, choices, headers
@@ -339,12 +340,7 @@ class QuartetParser(FlexibleNSParser):
                 )
             # if an event is out of order but not an observation then throw
             # an out of order exception
-            if epcis_event.event_timezone_offset in epcis_event.event_time:
-                event_time = parse_date(epcis_event.event_time)
-            else:
-                event_time = parse_date("%sZ%s" % (
-                    epcis_event.event_time,
-                    epcis_event.event_timezone_offset))
+            event_time = self.get_event_time(epcis_event)
             if not created and event_time < entry.last_event_time \
                 and db_event.action != yes_events.Action.observe.value:
                 raise self.EventOrderException(_(
@@ -367,6 +363,21 @@ class QuartetParser(FlexibleNSParser):
                                             identifier=epc,
                                             output=output)
             self.entry_event_cache.append(entryevent)
+
+    def get_event_time(self, epcis_event: yes_events.EPCISEvent) -> datetime:
+        """
+        Override to get a valid event time for a given event if you are
+        dealing with non ISO or python date strings.
+        :param epcis_event: The event with the event time to convert.
+        :return: A datetime representing the EPCIS event event time string.
+        """
+        if epcis_event.event_timezone_offset in epcis_event.event_time:
+            event_time = parse_date(epcis_event.event_time)
+        else:
+            event_time = parse_date("%sZ%s" % (
+                epcis_event.event_time,
+                epcis_event.event_timezone_offset))
+        return event_time
 
     def _check_for_aggregation(self, db_event, entry, epcis_event):
         '''
