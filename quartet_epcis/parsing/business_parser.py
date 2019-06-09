@@ -282,12 +282,7 @@ class BusinessEPCISParser(QuartetParser):
             self.entry_cache[db_entry.identifier] = db_entry
 
     def _parse_date(self, epcis_event):
-        if epcis_event.event_timezone_offset in epcis_event.event_time:
-            event_time = parse_date(epcis_event.event_time)
-        else:
-            event_time = parse_date("%sZ%s" % (
-                epcis_event.event_time,
-                epcis_event.event_timezone_offset))
+        event_time = parse_date(epcis_event.event_time)
         return event_time
 
     def _get_child_entries(self, db_entry: entries.Entry):
