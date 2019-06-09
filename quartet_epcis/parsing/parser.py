@@ -371,12 +371,7 @@ class QuartetParser(FlexibleNSParser):
         :param epcis_event: The event with the event time to convert.
         :return: A datetime representing the EPCIS event event time string.
         """
-        if epcis_event.event_timezone_offset in epcis_event.event_time:
-            event_time = parse_date(epcis_event.event_time)
-        else:
-            event_time = parse_date("%sZ%s" % (
-                epcis_event.event_time,
-                epcis_event.event_timezone_offset))
+        event_time = parse_date(epcis_event.event_time)
         return event_time
 
     def _check_for_aggregation(self, db_event, entry, epcis_event):
