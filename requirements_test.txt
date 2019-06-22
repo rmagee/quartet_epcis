@@ -17,3 +17,4 @@ quartet_capture
 # Additional test requirements go here
 python-dateutil
 gs123
+psycopg2
