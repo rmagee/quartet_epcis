@@ -848,9 +848,30 @@ class EPCISDBProxy:
             entry__in=list(top_entries.values()),
             event_type=EventTypeChoicesEnum.AGGREGATION.value,
             is_parent=True
-        ).distinct()
+        ).distinct('event')
         for db_event in db_events:
             ret.append(self._get_aggregation_event(db_event.event))
+        return ret
+
+    def get_object_events_by_epcs(self, epcs: list):
+        '''
+        When supplied with a list of epcs,
+        will get a list of EPCPyYes object events corresponding to their
+        event history.  Useful for transmitting full histories
+        of packing, repacking, etc.
+        :param eps: The list of parents.
+        :return: A list of EPCPyYes template_event AggregationEvent instances.
+        '''
+        ret = []
+        db_entries = self.get_entries_by_epcs(epcs)
+        db_events = entries.EntryEvent.objects.select_related(
+            'event'
+        ).filter(
+            entry__in=list(db_entries),
+            event_type=EventTypeChoicesEnum.OBJECT.value,
+        ).distinct('event')
+        for db_event in db_events:
+            ret.append(self._get_object_event(db_event.event))
         return ret
 
     def _get_event_entries(self, db_event: events.Event):
