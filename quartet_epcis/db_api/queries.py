@@ -848,9 +848,12 @@ class EPCISDBProxy:
             entry__in=list(top_entries.values()),
             event_type=EventTypeChoicesEnum.AGGREGATION.value,
             is_parent=True
-        ).distinct('event')
+        ).values('event').distinct()
+        db_events = events.Event.objects.filter(
+            id__in=db_events
+        )
         for db_event in db_events:
-            ret.append(self._get_aggregation_event(db_event.event))
+            ret.append(self._get_aggregation_event(db_event))
         return ret
 
     def get_object_events_by_epcs(self, epcs: list):
@@ -869,9 +872,12 @@ class EPCISDBProxy:
         ).filter(
             entry__in=list(db_entries),
             event_type=EventTypeChoicesEnum.OBJECT.value,
-        ).distinct('event')
+        ).values('event').distinct()
+        db_events = events.Event.objects.filter(
+            id__in=db_events
+        )
         for db_event in db_events:
-            ret.append(self._get_object_event(db_event.event))
+            ret.append(self._get_object_event(db_event))
         return ret
 
     def _get_event_entries(self, db_event: events.Event):
