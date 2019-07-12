@@ -64,11 +64,12 @@ class EPCISDBProxy:
     the EPCIS schema / XML model by converting queries for data into
     EPCPyYes objects.
     '''
+
     def get_message_by_event_id(self, event_id: str, return_header=True):
         message_id = events.Event.objects.get(
-            id = event_id
+            id=event_id
         ).message_id
-        message = headers.Message.objects.get(id = message_id)
+        message = headers.Message.objects.get(id=message_id)
         return self.get_full_message(message, return_header)
 
     def get_full_message(self, message: headers.Message, return_header=True):
@@ -812,7 +813,8 @@ class EPCISDBProxy:
         for db_entry in db_entries:
             # add this to the collection...
             # if there is no top_id and it is a parent that means it's a top
-            lower_entries = self.get_entry_child_parents(db_entry, select_for_update=False)
+            lower_entries = self.get_entry_child_parents(db_entry,
+                                                         select_for_update=False)
             collected_entries[db_entry.identifier] = db_entry
 
             for lower_entry in lower_entries:
@@ -856,7 +858,7 @@ class EPCISDBProxy:
             ret.append(self._get_aggregation_event(db_event))
         return ret
 
-    def get_object_events_by_epcs(self, epcs: list):
+    def get_object_events_by_epcs(self, epcs: list, select_for_update=True):
         '''
         When supplied with a list of epcs,
         will get a list of EPCPyYes object events corresponding to their
@@ -866,7 +868,10 @@ class EPCISDBProxy:
         :return: A list of EPCPyYes template_event AggregationEvent instances.
         '''
         ret = []
-        db_entries = self.get_entries_by_epcs(epcs)
+        db_entries = self.get_entries_by_epcs(
+            epcs,
+            select_for_update=select_for_update
+        )
         db_events = entries.EntryEvent.objects.select_related(
             'event'
         ).filter(
