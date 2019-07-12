@@ -71,3 +71,5 @@ may not contain an explicit namespace declaration.
 +++++++++++++
 * Added a helper to the db_proxy module to return all object events
   by epc list.
+* Added select_for_update parameter to the dbproxy get object events
+  function.
