@@ -475,10 +475,10 @@ class BusinessEPCISParser(QuartetParser):
             )
             if db_entries.count() != len(epcs):
                 raise errors.EntryException(
-                    _('Invalid Entry.  One of the values in the '
+                    _('Invalid Entry in %s.  One of the values in the '
                       'event has either '
                       'been decommissioned or was '
-                      'never commissioned.')
+                      'never commissioned.' % epcs)
                 )
         return db_entries
 

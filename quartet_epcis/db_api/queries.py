@@ -199,7 +199,7 @@ class EPCISDBProxy:
         '''
         ilmds = events.InstanceLotMasterData.objects.select_related(
             'event'
-        ).prefetch_related(
+        ).order_by('event__event_time').prefetch_related(
             'event__transformationid_set',
             'event__errordeclaration_set',
             'event__quantityelement_set',
@@ -770,7 +770,7 @@ class EPCISDBProxy:
         ).distinct()
         db_events = events.Event.objects.filter(
             id__in=db_entry_events
-        )
+        ).order_by('event_time')
         return [self.get_epcis_event(db_event) for db_event in db_events]
 
     def get_events_by_entry_identifer(self, entry_identifier: str):
@@ -786,7 +786,7 @@ class EPCISDBProxy:
             entries.EntryEvent.objects.select_related('event').only(
                 'event').filter(
                 entry__identifier=entry_identifier
-            ))
+            ).order_by('event__event_time'))
         for event in events:
             ret.append(event)
         return ret
@@ -880,7 +880,7 @@ class EPCISDBProxy:
         ).values('event').distinct()
         db_events = events.Event.objects.filter(
             id__in=db_events
-        )
+        ).order_by('event_time')
         for db_event in db_events:
             ret.append(self._get_object_event(db_event))
         return ret
