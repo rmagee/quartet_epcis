@@ -718,6 +718,20 @@ class EPCISDBProxy:
             decommissioned=False,
         )
 
+    def get_entry_by_epc(self, epc: str, select_for_update: bool):
+        """
+        Returns an entry along with parent and top information instead of
+        related keys.
+        :param epc: The EPC to lookup
+        :param select_for_update: Whether or not to select for update.
+        :return: The entry.
+        """
+        entries.Entry.objects.select_related(
+            'parent_id',
+        )
+
+
+
     def get_entries_by_epcs(self, epcs: list, select_for_update=True):
         '''
         Returns a queryset of Entry model instances that have identifiers

@@ -18,7 +18,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-
 class Event(abstractmodels.EPCISBusinessEvent):
     '''
     An omnibus event structure intended to support the
@@ -203,7 +202,8 @@ class InstanceLotMasterData(models.Model):
         max_length=150,
         null=False,
         help_text=_('The name of the ILMD entry.'),
-        verbose_name=_('Name')
+        verbose_name=_('Name'),
+
     )
     value = models.CharField(
         max_length=255,

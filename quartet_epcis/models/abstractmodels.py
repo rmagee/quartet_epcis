@@ -20,6 +20,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from quartet_epcis.models import choices
 from haikunator import Haikunator
+from EPCPyYes.core.v1_2 import CBV
 
 haiku = Haikunator()
 
@@ -80,7 +81,7 @@ class SourceModel(models.Model):
         choices=choices.EVENT_TYPE_CHOICES,
         help_text=_('The type of originating event: Object, Aggregation, '
                     'Transaction or Transformation.'),
-        verbose_name=_('Source Event Type')
+        verbose_name=_('Source Event Type'),
     )
 
     def __str__(self):
@@ -121,7 +122,7 @@ class EPCISEvent(UUIDModel):
     event_id = models.CharField(
         max_length=150,
         null=True,
-        default=haikunate,
+        default=uuid.uuid4,
         help_text=_('An identifier for this event as specified by the '
                     'capturing application, globally unique across all events '
                     'other than error declarations. Not to be confused with '
@@ -131,7 +132,7 @@ class EPCISEvent(UUIDModel):
     )
 
     def __str__(self):
-        return self.event_time or ''
+        return self.event_time.utcnow().isoformat() or ''
 
     class Meta:
         abstract = True
@@ -155,7 +156,9 @@ class EPCISBusinessEvent(EPCISEvent):
         max_length=150,
         null=True,
         help_text=_('The business step of which this event was a part.'),
-        verbose_name=_('Business Step')
+        verbose_name=_('Business Step'),
+        choices=[(tag.value, tag.value) for tag in CBV.BusinessSteps],
+        blank=True
     )
     disposition = models.CharField(
         max_length=150,
@@ -163,13 +166,16 @@ class EPCISBusinessEvent(EPCISEvent):
         help_text=_('The business condition of the objects associated '
                     'with the EPCs, presumed to hold true until '
                     'contradicted by a subsequent event..'),
-        verbose_name=_('Disposition')
+        verbose_name=_('Disposition'),
+        choices=[(tag.value, tag.value) for tag in CBV.Disposition],
+        blank=True
     )
     read_point = models.CharField(
         max_length=150,
         null=True,
         help_text=_('The read point at which the event took place.'),
-        verbose_name=_('Read Point')
+        verbose_name=_('Read Point'),
+        blank=True
     )
     biz_location = models.CharField(
         max_length=150,
@@ -178,11 +184,12 @@ class EPCISBusinessEvent(EPCISEvent):
                     'associated with the EPCs may be found, '
                     'until contradicted '
                     'by a subsequent event.'),
-        verbose_name=_('Business Location')
+        verbose_name=_('Business Location'),
+        blank=True
     )
 
     def __str__(self):
-        return self.event_time or ''
+        return self.event_time.utcnow().isoformat() or ''
 
     class Meta:
         abstract = True
