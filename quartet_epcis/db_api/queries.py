@@ -43,7 +43,6 @@ def get_sources(db_event: events.Event):
         filter(event=db_event).values_list('source')
     return events.Source.objects.filter(id__in=source_events)
 
-
 def get_destinations(db_event: events.Event):
     '''
     Returns each of the destination events associated with the db_event
@@ -140,6 +139,29 @@ class EPCISDBProxy:
             parent_id__identifier=identifier,
             decommissioned=False
         ).values_list('identifier', flat=True)
+
+    def get_events_by_epc_list(self, epcs: list):
+        '''
+        Returns a list of EPCPyEvents the epc was found in.
+        :param epc: The epc to search events for.
+        :param epc_pk: The primary key of the epc to search events for.
+        :return: A list of EPCPyEvents
+        '''
+        event_entries = entries.EntryEvent.objects.order_by(
+            'event__event_time'
+        ).select_related(
+            'event'
+        ).prefetch_related(
+            'event__transformationid_set',
+            'event__errordeclaration_set',
+            'event__quantityelement_set',
+            'event__businesstransaction_set',
+            'event__instancelotmasterdata_set',
+            'event__sourceevent_set__source',
+            'event__destinationevent_set__destination',
+        ).filter(identifier__in=epcs)
+        return [self.get_epcis_event(event_entry.event) for event_entry in
+                event_entries]
 
     def get_events_by_epc(self, epc: str = None, epc_pk: str = None):
         '''
