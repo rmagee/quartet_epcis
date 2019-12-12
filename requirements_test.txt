@@ -1,17 +1,16 @@
 django
 djangorestframework
-coverage==4.4.1
-mock>=1.0.1
-flake8>=2.1.0
-tox>=1.7.0
-codecov>=2.0.0
+coverage
+mock
+flake8
+tox
+codecov
 recommonmark
 django-model-utils
 haikunator
-django-model-utils
 djangorestframework-xml
 django-filter
-eparsecis>=2.0.0
+eparsecis
 epcpyyes
 quartet_capture
 # Additional test requirements go here
