@@ -14,7 +14,6 @@
 # Copyright 2018 SerialLab Corp.  All rights reserved.
 
 from rest_framework_xml.renderers import XMLRenderer
-from rest_framework.renderers import JSONRenderer
 
 class EPCPyYesXMLRenderer(XMLRenderer):
     '''

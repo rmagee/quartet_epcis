@@ -15,6 +15,7 @@
 import logging
 from typing import List
 from gettext import gettext as _
+
 from rest_framework import views
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -23,6 +24,7 @@ from rest_framework import status
 from EPCPyYes.core.v1_2 import template_events
 from quartet_epcis.db_api.queries import EPCISDBProxy
 from quartet_epcis.models import events, headers, entries
+from quartet_epcis.renderers import EPCPyYesXMLRenderer
 
 logger = logging.getLogger(__name__)
 EventList = List[events.Event]
