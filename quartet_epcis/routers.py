@@ -19,25 +19,25 @@ from quartet_epcis import viewsets
 
 
 router = DefaultRouter()
-router.register(r'entries', viewsets.EntryViewSet, Widget='entries')
+router.register(r'entries', viewsets.EntryViewSet, basename='entries')
 router.register(r'entry-events', viewsets.EntryEventViewSet,
-                Widget='entry-events')
-router.register(r'events', viewsets.EventViewSet, Widget='events')
+                basename='entry-events')
+router.register(r'events', viewsets.EventViewSet, basename='events')
 router.register(r'transformation-ids', viewsets.TransformationIDViewSet,
-                Widget='transformation-ids')
+                basename='transformation-ids')
 router.register(r'error-declarations', viewsets.ErrorDeclarationViewSet,
-                Widget='error-declarations')
+                basename='error-declarations')
 router.register(r'quantity-elements', viewsets.QuantityElementViewSet,
-                Widget='quantity-elements')
+                basename='quantity-elements')
 router.register(r'business-transactions', viewsets.BusinessTransactionViewSet,
-                Widget='business-transactions')
+                basename='business-transactions')
 router.register(r'ilmd', viewsets.InstanceLotMasterDataViewSet,
-                Widget='ilmd')
-router.register(r'sources', viewsets.SourceViewSet, Widget='sources')
+                basename='ilmd')
+router.register(r'sources', viewsets.SourceViewSet, basename='sources')
 router.register(r'source-events', viewsets.SourceEventViewSet,
-                Widget='source-events')
+                basename='source-events')
 router.register(r'destinations', viewsets.DestinationViewSet,
-                Widget='destinations')
+                basename='destinations')
 router.register(r'destination-event', viewsets.DestinationEventViewSet,
-                Widget='destinations')
-router.register(r'messages',viewsets.MessageViewSet, Widget='messages')
+                basename='destinations')
+router.register(r'messages',viewsets.MessageViewSet, basename='messages')
