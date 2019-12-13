@@ -8,7 +8,6 @@ codecov>=2.0.0
 recommonmark
 django-model-utils
 haikunator
-django-model-utils
 django-filter
 eparsecis>=2.0.0
 epcpyyes
@@ -17,4 +16,4 @@ quartet_capture
 python-dateutil
 gs123
 six
--e git://github.com/rmagee/djangorestframework-xml.git#egg=djangorestframework_xml
+-e git+git@github.com/rmagee/djangorestframework-xml.git#egg=djangorestframework_xml
