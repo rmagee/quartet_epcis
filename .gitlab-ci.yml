@@ -9,7 +9,7 @@ services:
 variables:
   POSTGRES_DB: qu4rtet
   POSTGRES_USER: qu4rtet
-  POSTGRES_PASSWORD: ""
+  POSTGRES_PASSWORD: password
 
 python3_5_unit_test:
   image: seriallab/python3.5dev
