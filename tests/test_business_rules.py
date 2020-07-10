@@ -99,7 +99,7 @@ class BusinessRulesTestCase(TestCase):
         '''
         self._parse_test_data('data/observe.xml')
         ens = entries.EntryEvent.objects.filter(
-            entry__identifier__in =[
+            entry__identifier__in=[
                 'urn:epc:id:sscc:0377713.0000000007',
                 'urn:epc:id:sscc:0377713.0000000008'
             ]
@@ -224,6 +224,59 @@ class BusinessRulesTestCase(TestCase):
                                                 "total of 12 children.")
         event_count = events.Event.objects.all().count()
         self.assertEqual(event_count, 4, "There should be four events.")
+
+    def test_child_update(self):
+        '''
+        Packs items to cases and cases to pallet and verifies.
+        '''
+        # commission the items first
+        self._parse_test_data('data/commission.xml')
+        # then pack
+        self.assertEqual(
+            entries.Entry.objects.all().count(),
+            13,
+            "There should be a total of 13 entries commissioned."
+        )
+        self._parse_test_data('data/nested_pack.xml')
+        palet = entries.Entry.objects.get(
+            identifier='urn:epc:id:sgtin:305555.5555555.1'
+        )
+        db_entries = db_proxy.get_entries_by_parent(palet)
+        self.assertEqual(db_entries.count(), 2, "The entry count was "
+                                                "incorrect")
+        for entry in db_entries:
+            self.assertEqual(
+                db_proxy.get_entries_by_parent(entry).count(),
+                5
+            )
+        all_child = entries.Entry.objects.filter(
+            top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
+        )
+        self.assertEqual(all_child.count(), 12, "There should be a total"
+                                                " of 12 children.")
+        ee = entries.EntryEvent.objects.get(
+            identifier='urn:epc:id:sgtin:305555.5555555.1',
+            event_type=choices.EventTypeChoicesEnum.AGGREGATION.value,
+            is_parent=True
+        )
+        self.assertIsNotNone(ee)
+        evs = entries.EntryEvent.objects.filter(
+            entry__in=entries.Entry.objects.all()
+        )
+        # 13 + 6 + 6 + 3 entry events should be stored.
+        self.assertEqual(evs.count(), 28, "There should be 28 entry events.")
+        self.assertEqual(all_child.count(), 12, "There should be a "
+                                                "total of 12 children.")
+        event_count = events.Event.objects.all().count()
+        self.assertEqual(event_count, 4, "There should be four events.")
+        self._parse_test_data('data/observe_return.xml',
+                              recursive_child_update=True)
+        all_child = entries.Entry.objects.filter(
+            top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'
+        )
+        for child in all_child:
+            self.assertEqual(child.last_disposition,
+                             'urn:epcglobal:cbv:disp:returned')
 
     def test_uncommissioned_pack(self):
         '''
@@ -363,17 +416,26 @@ class BusinessRulesTestCase(TestCase):
 
     def _parse_test_data(self, test_file='data/epcis.xml',
                          parser_type=BusinessEPCISParser,
-                         recursive_decommission=False):
+                         recursive_decommission=False,
+                         recursive_child_update=False
+                         ):
         curpath = os.path.dirname(__file__)
         if isinstance(parser_type, BusinessEPCISParser):
             parser = parser_type(
                 os.path.join(curpath, test_file),
-                recursive_decommission=recursive_decommission
+                recursive_decommission=recursive_decommission,
+                recursive_child_update=recursive_child_update
             )
         else:
-            parser = parser_type(
-                os.path.join(curpath, test_file),
-            )
+            if parser_type is type(BusinessEPCISParser):
+                parser = parser_type(
+                    os.path.join(curpath, test_file),
+                    recursive_child_update=recursive_child_update
+                )
+            else:
+                parser = parser_type(
+                    os.path.join(curpath, test_file)
+                )
         message_id = parser.parse()
         print(parser.event_cache)
         return message_id, parser

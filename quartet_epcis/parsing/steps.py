@@ -89,6 +89,10 @@ class EPCISParsingStep(RuleStep):
         self.loose_enforcement = self.get_boolean_parameter(
             'LooseEnforcement', False)
         self.format = self.get_parameter('Format', 'XML')
+        self.recursive_child_update = self.get_or_create_parameter(
+            'Recursive Child Update', 'False',
+            "Whether or not to update children during observe events."
+        )
 
     @property
     def declared_parameters(self):
@@ -100,7 +104,11 @@ class EPCISParsingStep(RuleStep):
                 "Format": "JSON or XML.  If set to XML, the LooseEnforcement "
                           "parameter is examined.  If set to JSON, inbound "
                           "data must be in the EPCPyYes JSON format and will "
-                          "be subject to strong business rule enforcement."
+                          "be subject to strong business rule enforcement.",
+                "Recursive Child Update":
+                    "Boolean, whether or not to recursively update all child"
+                    " entries during object events to reflect the state of "
+                    "their parent."
                 }
 
     def execute(self, data, rule_context: RuleContext):
@@ -114,9 +122,21 @@ class EPCISParsingStep(RuleStep):
         self.info('Parsing message %s.dat', rule_context.task_name)
         try:
             if isinstance(data, File):
-                parser = parser_type(data)
+                if parser_type is type(BusinessEPCISParser):
+                    parser = parser_type(
+                        data,
+                        recursive_child_update=self.recursive_child_update
+                    )
+                else:
+                    parser = parser_type(data)
             else:
-                parser = parser_type(io.BytesIO(data))
+                if parser_type is type(BusinessEPCISParser):
+                    parser = parser_type(
+                        io.BytesIO(data),
+                        recursive_child_update=self.recursive_child_update
+                    )
+                else:
+                    parser = parser_type(io.BytesIO(data))
         except TypeError:
             try:
                 parser = parser_type(io.BytesIO(data.encode()))
@@ -135,5 +155,3 @@ class EPCISParsingStep(RuleStep):
 
     def on_failure(self):
         pass
-
-

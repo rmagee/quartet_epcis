@@ -34,7 +34,8 @@ EntryList = List[entries.Entry]
 class BusinessEPCISParser(QuartetParser):
 
     def __init__(self, stream, event_cache_size: int = 1024,
-                 recursive_decommission: bool = True):
+                 recursive_decommission: bool = True,
+                 recursive_child_update: bool = False):
         '''
         Initializes a BusinessEPCISParser.  This parser will enforce business
         rules around aggregation, decommissioning and the like.
@@ -47,6 +48,7 @@ class BusinessEPCISParser(QuartetParser):
         super().__init__(stream, event_cache_size)
         self.decommissioned_entry_cache = {}
         self.recursive_decommission = recursive_decommission
+        self.recursive_child_update = recursive_child_update
 
     def handle_aggregation_event(
         self,
@@ -516,6 +518,23 @@ class BusinessEPCISParser(QuartetParser):
                                              output=False)
             self.entry_event_cache.append(entry_event)
 
+    def _recursive_child_update(self):
+        """
+        Will update all children of all entries that were just saved with
+        the parent disposition (this excludes the decommissioned entries
+        cache).
+        :return: None
+        """
+        parents = [entry for entry in self.entry_cache.values() if entry.is_parent]
+        for entry in parents:
+            entries.Entry.objects.select_for_update().filter(
+                top_id = entry
+            ).update(
+                last_event = entry.last_event,
+                last_event_time = entry.last_event_time,
+                last_disposition = entry.last_disposition,
+            )
+
     def clear_cache(self):
         # create events
         event_cache = self._get_sorted_event_cache()
@@ -523,6 +542,8 @@ class BusinessEPCISParser(QuartetParser):
         # update entries
         for db_entry in list(self.entry_cache.values()):
             db_entry.save()
+        if self.recursive_child_update:
+            self._recursive_child_update()
         # clear the event cache
         self.event_cache.clear()
         decommissioned_entries = list(

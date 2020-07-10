@@ -889,6 +889,8 @@ class EPCISDBProxy:
         ).values('event').distinct()
         db_events = events.Event.objects.filter(
             id__in=db_events
+        ).order_by(
+            'event_time'
         )
         for db_event in db_events:
             ret.append(self._get_aggregation_event(db_event))

@@ -18,3 +18,4 @@ gs123
 six
 -e git://github.com/rmagee/django-rest-framework-xml.git#egg=djangorestframework-xml
 quartet_masterdata
+psycopg2
