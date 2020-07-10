@@ -427,7 +427,7 @@ class BusinessRulesTestCase(TestCase):
                 recursive_child_update=recursive_child_update
             )
         else:
-            if parser_type is type(BusinessEPCISParser):
+            if parser_type is BusinessEPCISParser:
                 parser = parser_type(
                     os.path.join(curpath, test_file),
                     recursive_child_update=recursive_child_update
