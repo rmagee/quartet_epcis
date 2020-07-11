@@ -92,7 +92,7 @@ class EPCISParsingStep(RuleStep):
         self.recursive_child_update = self.get_or_create_parameter(
             'Recursive Child Update', 'False',
             "Whether or not to update children during observe events."
-        )
+        ).lower() == "true"
 
     @property
     def declared_parameters(self):
@@ -122,7 +122,7 @@ class EPCISParsingStep(RuleStep):
         self.info('Parsing message %s.dat', rule_context.task_name)
         try:
             if isinstance(data, File):
-                if parser_type is type(BusinessEPCISParser):
+                if parser_type is BusinessEPCISParser:
                     parser = parser_type(
                         data,
                         recursive_child_update=self.recursive_child_update
@@ -130,7 +130,7 @@ class EPCISParsingStep(RuleStep):
                 else:
                     parser = parser_type(data)
             else:
-                if parser_type is type(BusinessEPCISParser):
+                if parser_type is BusinessEPCISParser:
                     parser = parser_type(
                         io.BytesIO(data),
                         recursive_child_update=self.recursive_child_update

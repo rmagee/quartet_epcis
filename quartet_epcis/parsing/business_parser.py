@@ -525,6 +525,7 @@ class BusinessEPCISParser(QuartetParser):
         cache).
         :return: None
         """
+
         parents = [entry for entry in self.entry_cache.values() if entry.is_parent]
         for entry in parents:
             entries.Entry.objects.select_for_update().filter(

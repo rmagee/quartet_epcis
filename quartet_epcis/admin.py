@@ -24,6 +24,9 @@ class EntryAdmin(admin.ModelAdmin):
         'last_aggregation_event_time',
         'is_parent'
     )
+    search_fields = [
+        'identifier', 'top_id__identifier', 'parent_id__identifier'
+    ]
 
 
 @admin.register(entries.EntryEvent)
