@@ -93,6 +93,10 @@ class EPCISParsingStep(RuleStep):
             'Recursive Child Update', 'False',
             "Whether or not to update children during observe events."
         ).lower() == "true"
+        self.use_top_for_update = self.get_or_create_parameter(
+            'Use Top For Child Update', 'True',
+            'Whether or not to use top records or true recursion.'
+        ).lower() == "true"
 
     @property
     def declared_parameters(self):
@@ -108,7 +112,11 @@ class EPCISParsingStep(RuleStep):
                 "Recursive Child Update":
                     "Boolean, whether or not to recursively update all child"
                     " entries during object events to reflect the state of "
-                    "their parent."
+                    "their parent.",
+                "Use Top For Child Update":
+                    "Boolean, or not to use the top hierarchical item for "
+                    "child updates or to use a recursive function.  Default "
+                    "is True."
                 }
 
     def execute(self, data, rule_context: RuleContext):
@@ -125,7 +133,8 @@ class EPCISParsingStep(RuleStep):
                 if parser_type is BusinessEPCISParser:
                     parser = parser_type(
                         data,
-                        recursive_child_update=self.recursive_child_update
+                        recursive_child_update=self.recursive_child_update,
+                        child_update_from_top=self.use_top_for_update
                     )
                 else:
                     parser = parser_type(data)
@@ -133,7 +142,8 @@ class EPCISParsingStep(RuleStep):
                 if parser_type is BusinessEPCISParser:
                     parser = parser_type(
                         io.BytesIO(data),
-                        recursive_child_update=self.recursive_child_update
+                        recursive_child_update=self.recursive_child_update,
+                        child_update_from_top=self.use_top_for_update
                     )
                 else:
                     parser = parser_type(io.BytesIO(data))
