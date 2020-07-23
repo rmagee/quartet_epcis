@@ -25,7 +25,7 @@ class EntryAdmin(admin.ModelAdmin):
         'is_parent'
     )
     search_fields = [
-        'identifier', 'top_id__identifier', 'parent_id__identifier'
+        'identifier'
     ]
 
 
