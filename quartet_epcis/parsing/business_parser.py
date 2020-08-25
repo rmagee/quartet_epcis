@@ -30,7 +30,6 @@ db_proxy = EPCISDBProxy()
 
 EntryList = List[entries.Entry]
 
-
 class BusinessEPCISParser(QuartetParser):
 
     def __init__(self, stream, event_cache_size: int = 1024,
@@ -329,7 +328,6 @@ class BusinessEPCISParser(QuartetParser):
                 db_entry.last_event = db_event
                 db_entry.last_event_time = self._parse_date(epcis_event)
                 db_entry.last_disposition = epcis_event.disposition
-                # db_entry.save()
         elif isinstance(db_entries, QuerySet):
             # update the database
             count = db_entries.update(

@@ -20,7 +20,7 @@ from quartet_epcis.db_api.queries import EPCISDBProxy
 from quartet_epcis.models import events, choices, headers, entries
 from quartet_epcis.parsing import errors
 from quartet_epcis.parsing.parser import QuartetParser
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 
 db_proxy = EPCISDBProxy()
 logger = logging.getLogger(__name__)
