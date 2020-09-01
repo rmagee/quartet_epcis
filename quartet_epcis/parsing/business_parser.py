@@ -534,7 +534,7 @@ class BusinessEPCISParser(QuartetParser):
                 last_event_time=entry.last_event_time,
                 last_disposition=entry.last_disposition,
             )
-            child_parents = [entry for entry in children if entry.is_parent]
+            child_parents = [child for child in children if child.is_parent]
             self._recursive_child_update(child_parents)
 
     def _child_update(self, parents: EntryList):
