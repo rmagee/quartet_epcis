@@ -111,6 +111,10 @@ class Entry(abstractmodels.UUIDModel):
                     "in business processes."),
     )
 
+    @property
+    def is_top(self):
+        return self.is_parent and self.top_id is None
+
     def __str__(self):
         return self.identifier or ''
 

@@ -30,6 +30,7 @@ db_proxy = EPCISDBProxy()
 
 EntryList = List[entries.Entry]
 
+
 class BusinessEPCISParser(QuartetParser):
 
     def __init__(self, stream, event_cache_size: int = 1024,
@@ -527,15 +528,25 @@ class BusinessEPCISParser(QuartetParser):
         are incomplete hierarchy records within the system.
         :return: None
         """
-        for entry in parents:
-            children = db_proxy.get_entries_by_parent(entry)
+        tops = [entry for entry in parents if entry.is_top]
+        parents = [entry for entry in parents if entry.is_parent and entry.is_top is False]
+        for entry in tops:
+            children = db_proxy.get_entries_by_top(entry)
             children.all().update(
                 last_event=entry.last_event,
                 last_event_time=entry.last_event_time,
                 last_disposition=entry.last_disposition,
             )
-            child_parents = [child for child in children if child.is_parent]
-            self._recursive_child_update(child_parents)
+        for entry in parents:
+            if entry.top_id not in tops:
+                children = db_proxy.get_entries_by_parent(entry)
+                children.all().update(
+                    last_event=entry.last_event,
+                    last_event_time=entry.last_event_time,
+                    last_disposition=entry.last_disposition,
+                )
+                child_parents = [child for child in children if child.is_parent]
+                self._recursive_child_update(child_parents)
 
     def _child_update(self, parents: EntryList):
         """
@@ -561,11 +572,13 @@ class BusinessEPCISParser(QuartetParser):
         for db_entry in list(self.entry_cache.values()):
             db_entry.save()
         if self.recursive_child_update:
-            parents = [entry for entry in self.entry_cache.values() if
-                       entry.is_parent]
             if self.child_update_from_top:
-                self._child_update(parents)
+                tops = [entry for entry in self.entry_cache.values() if
+                           entry.is_top]
+                self._child_update(tops)
             else:
+                parents = [entry for entry in self.entry_cache.values() if
+                       entry.is_parent]
                 self._recursive_child_update(parents)
         # clear the event cache
         self.event_cache.clear()

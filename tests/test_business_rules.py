@@ -324,7 +324,7 @@ class BusinessRulesTestCase(TestCase):
         self.assertEqual(event_count, 4, "There should be four events.")
         self._parse_test_data('data/observe_return.xml',
                               recursive_child_update=True,
-                              child_update_from_top=True
+                              child_update_from_top=False
                               )
         all_child = entries.Entry.objects.filter(
             top_id__identifier='urn:epc:id:sgtin:305555.5555555.1'

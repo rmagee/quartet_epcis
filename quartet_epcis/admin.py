@@ -22,7 +22,12 @@ class EntryAdmin(admin.ModelAdmin):
     readonly_fields = (
         'last_event_time',
         'last_aggregation_event_time',
-        'is_parent'
+        'is_parent',
+        'parent_id',
+        'top_id',
+        'last_event',
+        'last_disposition',
+        'last_aggregation_event'
     )
     search_fields = [
         'identifier'
@@ -34,15 +39,18 @@ class EntryEventAdmin(admin.ModelAdmin):
     list_display = (
         'identifier',
         'event',
-        'event_type'
+        'event_type',
+        'task_name'
     )
+    search_fields = ['identifier']
     readonly_fields = (
         'event_type',
         'entry',
         'event',
         'is_parent',
         'output',
-        'event_time'
+        'event_time',
+        'task_name'
     )
 
 
