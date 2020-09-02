@@ -33,22 +33,14 @@ class BusinessEPCISParser(bep):
         self.rule_context = rule_context
         self.counter = 0
 
-    def handle_aggregation_event(self, epcis_event: events.AggregationEvent):
+    def clear_cache(self):
+        """
+        Sets the task name on Entry Events.
+        :return: None
+        """
         if self.rule_context:
-            epcis_event.event_id = self.get_new_event_id()
-        return super().handle_aggregation_event(epcis_event)
+            for entry_event in self.entry_event_cache:
+                entry_event.task = self.rule_context.task_name
+        super().clear_cache()
 
-    def handle_object_event(self, epcis_event: yes_events.ObjectEvent):
-        if self.rule_context:
-            epcis_event.event_id = self.get_new_event_id()
-        super().handle_object_event(epcis_event)
 
-    def handle_transaction_event(self,
-                                 epcis_event: yes_events.TransactionEvent):
-        if self.rule_context:
-            epcis_event.event_id = self.get_new_event_id()
-        super().handle_transaction_event(epcis_event)
-
-    def get_new_event_id(self):
-        self.counter += 1
-        return '%s_%s' % (self.rule_context.task_name, self.counter)

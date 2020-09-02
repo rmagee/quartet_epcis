@@ -184,6 +184,13 @@ class EntryEvent(models.Model):
         verbose_name=_("Modified"),
         help_text=_("When this record was last modified."),
     )
+    task_name = models.CharField(
+        max_length=150,
+        null=True,
+        blank=True,
+        verbose_name=_('Task Name'),
+        help_text=_('The name of the Task that parsed this Entry and Event.')
+    )
 
     def __str__(self):
         return self.identifier or ''

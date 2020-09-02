@@ -19,7 +19,7 @@ from quartet_capture import models
 from quartet_capture.rules import Step as RuleStep
 from quartet_capture.rules import RuleContext
 from quartet_epcis.parsing.parser import QuartetParser
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 from quartet_epcis.parsing.json import JSONParser
 from django.core.files.base import File
 from quartet_capture.models import Rule, Step, StepParameter
@@ -134,7 +134,8 @@ class EPCISParsingStep(RuleStep):
                     parser = parser_type(
                         data,
                         recursive_child_update=self.recursive_child_update,
-                        child_update_from_top=self.use_top_for_update
+                        child_update_from_top=self.use_top_for_update,
+                        rule_context=rule_context
                     )
                 else:
                     parser = parser_type(data)
@@ -143,7 +144,8 @@ class EPCISParsingStep(RuleStep):
                     parser = parser_type(
                         io.BytesIO(data),
                         recursive_child_update=self.recursive_child_update,
-                        child_update_from_top=self.use_top_for_update
+                        child_update_from_top=self.use_top_for_update,
+                        rule_context=rule_context
                     )
                 else:
                     parser = parser_type(io.BytesIO(data))
@@ -165,3 +167,4 @@ class EPCISParsingStep(RuleStep):
 
     def on_failure(self):
         pass
+
