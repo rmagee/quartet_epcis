@@ -548,16 +548,16 @@ class BusinessEPCISParser(QuartetParser):
                 child_parents = [child for child in children if child.is_parent]
                 self._recursive_child_update(child_parents)
 
-    def _child_update(self, parents: EntryList):
+    def _child_update(self, tops: EntryList):
         """
         Will update all children of all entries that were just saved with
         the parent disposition (this excludes the decommissioned entries
         cache).
         :return: None
         """
-        for entry in parents:
-            entries.Entry.objects.select_for_update().filter(
-                top_id__in=parents
+        for entry in tops:
+            entries.Entry.objects.filter(
+                top_id__in=tops
             ).update(
                 last_event=entry.last_event,
                 last_event_time=entry.last_event_time,
