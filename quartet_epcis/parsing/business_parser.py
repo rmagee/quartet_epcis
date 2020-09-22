@@ -531,7 +531,7 @@ class BusinessEPCISParser(QuartetParser):
         tops = [entry for entry in parents if entry.is_top]
         parents = [entry for entry in parents if entry.is_parent and entry.is_top is False]
         for entry in tops:
-            children = db_proxy.get_entries_by_top(entry)
+            children = db_proxy.get_entries_by_top(entry, select_for_update=False)
             children.all().update(
                 last_event=entry.last_event,
                 last_event_time=entry.last_event_time,
@@ -539,7 +539,7 @@ class BusinessEPCISParser(QuartetParser):
             )
         for entry in parents:
             if entry.top_id not in tops:
-                children = db_proxy.get_entries_by_parent(entry)
+                children = db_proxy.get_entries_by_parent(entry, select_for_update=False)
                 children.all().update(
                     last_event=entry.last_event,
                     last_event_time=entry.last_event_time,
