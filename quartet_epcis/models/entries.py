@@ -111,6 +111,10 @@ class Entry(abstractmodels.UUIDModel):
                     "in business processes."),
     )
 
+    @property
+    def is_top(self):
+        return self.is_parent and self.top_id is None
+
     def __str__(self):
         return self.identifier or ''
 
@@ -183,6 +187,13 @@ class EntryEvent(models.Model):
         auto_now=True,
         verbose_name=_("Modified"),
         help_text=_("When this record was last modified."),
+    )
+    task_name = models.CharField(
+        max_length=150,
+        null=True,
+        blank=True,
+        verbose_name=_('Task Name'),
+        help_text=_('The name of the Task that parsed this Entry and Event.')
     )
 
     def __str__(self):

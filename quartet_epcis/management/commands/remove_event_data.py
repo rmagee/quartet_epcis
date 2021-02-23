@@ -12,9 +12,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2018 SerialLab Corp.  All rights reserved.
-from django.utils.translation import gettext as _
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
+from django.utils.translation import gettext as _
+
 from quartet_epcis.models import entries, events, headers
 
 
@@ -25,6 +26,7 @@ class Command(BaseCommand):
                             dest='force',
                             help='Force the removal of the event data.'
                             )
+
     def handle(self, *args, **options):
         debug = getattr(settings, 'DEBUG', False)
         force = options.get('force', False)

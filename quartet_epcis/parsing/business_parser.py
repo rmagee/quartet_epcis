@@ -34,7 +34,10 @@ EntryList = List[entries.Entry]
 class BusinessEPCISParser(QuartetParser):
 
     def __init__(self, stream, event_cache_size: int = 1024,
-                 recursive_decommission: bool = True):
+                 recursive_decommission: bool = True,
+                 recursive_child_update: bool = False,
+                 child_update_from_top: bool = True
+                 ):
         '''
         Initializes a BusinessEPCISParser.  This parser will enforce business
         rules around aggregation, decommissioning and the like.
@@ -47,6 +50,8 @@ class BusinessEPCISParser(QuartetParser):
         super().__init__(stream, event_cache_size)
         self.decommissioned_entry_cache = {}
         self.recursive_decommission = recursive_decommission
+        self.recursive_child_update = recursive_child_update
+        self.child_update_from_top = child_update_from_top
 
     def handle_aggregation_event(
         self,
@@ -282,12 +287,7 @@ class BusinessEPCISParser(QuartetParser):
             self.entry_cache[db_entry.identifier] = db_entry
 
     def _parse_date(self, epcis_event):
-        if epcis_event.event_timezone_offset in epcis_event.event_time:
-            event_time = parse_date(epcis_event.event_time)
-        else:
-            event_time = parse_date("%sZ%s" % (
-                epcis_event.event_time,
-                epcis_event.event_timezone_offset))
+        event_time = parse_date(epcis_event.event_time)
         return event_time
 
     def _get_child_entries(self, db_entry: entries.Entry):
@@ -329,7 +329,6 @@ class BusinessEPCISParser(QuartetParser):
                 db_entry.last_event = db_event
                 db_entry.last_event_time = self._parse_date(epcis_event)
                 db_entry.last_disposition = epcis_event.disposition
-                # db_entry.save()
         elif isinstance(db_entries, QuerySet):
             # update the database
             count = db_entries.update(
@@ -480,10 +479,10 @@ class BusinessEPCISParser(QuartetParser):
             )
             if db_entries.count() != len(epcs):
                 raise errors.EntryException(
-                    _('Invalid Entry.  One of the values in the '
+                    _('Invalid Entry in %s.  One of the values in the '
                       'event has either '
                       'been decommissioned or was '
-                      'never commissioned.')
+                      'never commissioned.' % epcs)
                 )
         return db_entries
 
@@ -521,6 +520,50 @@ class BusinessEPCISParser(QuartetParser):
                                              output=False)
             self.entry_event_cache.append(entry_event)
 
+    def _recursive_child_update(self, parents: list):
+        """
+        Will update all children of all entries that were just saved with
+        the parent disposition (this excludes the decommissioned entries
+        cache).  This will recursively execute and is useful to use if there
+        are incomplete hierarchy records within the system.
+        :return: None
+        """
+        tops = [entry for entry in parents if entry.is_top]
+        parents = [entry for entry in parents if entry.is_parent and entry.is_top is False]
+        for entry in tops:
+            children = db_proxy.get_entries_by_top(entry, select_for_update=False)
+            children.all().update(
+                last_event=entry.last_event,
+                last_event_time=entry.last_event_time,
+                last_disposition=entry.last_disposition,
+            )
+        for entry in parents:
+            if entry.top_id not in tops:
+                children = db_proxy.get_entries_by_parent(entry, select_for_update=False)
+                children.all().update(
+                    last_event=entry.last_event,
+                    last_event_time=entry.last_event_time,
+                    last_disposition=entry.last_disposition,
+                )
+                child_parents = [child for child in children if child.is_parent]
+                self._recursive_child_update(child_parents)
+
+    def _child_update(self, tops: EntryList):
+        """
+        Will update all children of all entries that were just saved with
+        the parent disposition (this excludes the decommissioned entries
+        cache).
+        :return: None
+        """
+        for entry in tops:
+            entries.Entry.objects.filter(
+                top_id__in=tops
+            ).update(
+                last_event=entry.last_event,
+                last_event_time=entry.last_event_time,
+                last_disposition=entry.last_disposition,
+            )
+
     def clear_cache(self):
         # create events
         event_cache = self._get_sorted_event_cache()
@@ -528,6 +571,15 @@ class BusinessEPCISParser(QuartetParser):
         # update entries
         for db_entry in list(self.entry_cache.values()):
             db_entry.save()
+        if self.recursive_child_update:
+            if self.child_update_from_top:
+                tops = [entry for entry in self.entry_cache.values() if
+                           entry.is_top]
+                self._child_update(tops)
+            else:
+                parents = [entry for entry in self.entry_cache.values() if
+                       entry.is_parent]
+                self._recursive_child_update(parents)
         # clear the event cache
         self.event_cache.clear()
         decommissioned_entries = list(
@@ -536,5 +588,3 @@ class BusinessEPCISParser(QuartetParser):
             decommissioned_entry.save()
         decommissioned_entries.clear()
         super().clear_cache()
-
-

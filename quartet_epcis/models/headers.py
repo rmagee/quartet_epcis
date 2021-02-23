@@ -223,7 +223,8 @@ class DocumentIdentification(models.Model):
         verbose_name=_('Type'),
         choices=document_type_choices
     )
-    multiple_type = models.NullBooleanField(
+    multiple_type = models.BooleanField(
+        null=True,
         default=False,
         help_text=_('A flag to indicate that there is more than one '
                     'type of Document in the instance.'),

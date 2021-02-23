@@ -38,14 +38,13 @@ if sys.argv[-1] == 'tag':
     sys.exit()
 
 readme = open('README.rst').read()
-history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 setup(
     name='quartet_epcis',
     version=version,
     description="""Defines EPCIS models and XML parsing.""",
-    long_description=readme + '\n\n' + history,
-    author='SerialLab Corp',
+    long_description=readme,
+    author='Rob Magee',
     author_email='slab@serial-lab.com',
     url='https://gitlab.com/serial-lab/quartet_epcis',
     packages=find_packages(exclude=['tests*']),

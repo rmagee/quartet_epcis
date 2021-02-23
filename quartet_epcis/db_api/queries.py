@@ -43,7 +43,6 @@ def get_sources(db_event: events.Event):
         filter(event=db_event).values_list('source')
     return events.Source.objects.filter(id__in=source_events)
 
-
 def get_destinations(db_event: events.Event):
     '''
     Returns each of the destination events associated with the db_event
@@ -64,11 +63,12 @@ class EPCISDBProxy:
     the EPCIS schema / XML model by converting queries for data into
     EPCPyYes objects.
     '''
+
     def get_message_by_event_id(self, event_id: str, return_header=True):
         message_id = events.Event.objects.get(
-            id = event_id
+            id=event_id
         ).message_id
-        message = headers.Message.objects.get(id = message_id)
+        message = headers.Message.objects.get(id=message_id)
         return self.get_full_message(message, return_header)
 
     def get_full_message(self, message: headers.Message, return_header=True):
@@ -140,6 +140,29 @@ class EPCISDBProxy:
             decommissioned=False
         ).values_list('identifier', flat=True)
 
+    def get_events_by_epc_list(self, epcs: list):
+        '''
+        Returns a list of EPCPyEvents the epc was found in.
+        :param epc: The epc to search events for.
+        :param epc_pk: The primary key of the epc to search events for.
+        :return: A list of EPCPyEvents
+        '''
+        event_entries = entries.EntryEvent.objects.order_by(
+            'event__event_time'
+        ).select_related(
+            'event'
+        ).prefetch_related(
+            'event__transformationid_set',
+            'event__errordeclaration_set',
+            'event__quantityelement_set',
+            'event__businesstransaction_set',
+            'event__instancelotmasterdata_set',
+            'event__sourceevent_set__source',
+            'event__destinationevent_set__destination',
+        ).filter(identifier__in=epcs)
+        return [self.get_epcis_event(event_entry.event) for event_entry in
+                event_entries]
+
     def get_events_by_epc(self, epc: str = None, epc_pk: str = None):
         '''
         Returns a list of EPCPyEvents the epc was found in.
@@ -198,7 +221,7 @@ class EPCISDBProxy:
         '''
         ilmds = events.InstanceLotMasterData.objects.select_related(
             'event'
-        ).prefetch_related(
+        ).order_by('event__event_time').prefetch_related(
             'event__transformationid_set',
             'event__errordeclaration_set',
             'event__quantityelement_set',
@@ -717,6 +740,20 @@ class EPCISDBProxy:
             decommissioned=False,
         )
 
+    def get_entry_by_epc(self, epc: str, select_for_update: bool):
+        """
+        Returns an entry along with parent and top information instead of
+        related keys.
+        :param epc: The EPC to lookup
+        :param select_for_update: Whether or not to select for update.
+        :return: The entry.
+        """
+        entries.Entry.objects.select_related(
+            'parent_id',
+        )
+
+
+
     def get_entries_by_epcs(self, epcs: list, select_for_update=True):
         '''
         Returns a queryset of Entry model instances that have identifiers
@@ -769,7 +806,7 @@ class EPCISDBProxy:
         ).distinct()
         db_events = events.Event.objects.filter(
             id__in=db_entry_events
-        )
+        ).order_by('event_time')
         return [self.get_epcis_event(db_event) for db_event in db_events]
 
     def get_events_by_entry_identifer(self, entry_identifier: str):
@@ -785,7 +822,7 @@ class EPCISDBProxy:
             entries.EntryEvent.objects.select_related('event').only(
                 'event').filter(
                 entry__identifier=entry_identifier
-            ))
+            ).order_by('event__event_time'))
         for event in events:
             ret.append(event)
         return ret
@@ -812,7 +849,8 @@ class EPCISDBProxy:
         for db_entry in db_entries:
             # add this to the collection...
             # if there is no top_id and it is a parent that means it's a top
-            lower_entries = self.get_entry_child_parents(db_entry, select_for_update=False)
+            lower_entries = self.get_entry_child_parents(db_entry,
+                                                         select_for_update=False)
             collected_entries[db_entry.identifier] = db_entry
 
             for lower_entry in lower_entries:
@@ -848,9 +886,41 @@ class EPCISDBProxy:
             entry__in=list(top_entries.values()),
             event_type=EventTypeChoicesEnum.AGGREGATION.value,
             is_parent=True
-        ).distinct()
+        ).values('event').distinct()
+        db_events = events.Event.objects.filter(
+            id__in=db_events
+        ).order_by(
+            'event_time'
+        )
         for db_event in db_events:
-            ret.append(self._get_aggregation_event(db_event.event))
+            ret.append(self._get_aggregation_event(db_event))
+        return ret
+
+    def get_object_events_by_epcs(self, epcs: list, select_for_update=True):
+        '''
+        When supplied with a list of epcs,
+        will get a list of EPCPyYes object events corresponding to their
+        event history.  Useful for transmitting full histories
+        of packing, repacking, etc.
+        :param eps: The list of parents.
+        :return: A list of EPCPyYes template_event AggregationEvent instances.
+        '''
+        ret = []
+        db_entries = self.get_entries_by_epcs(
+            epcs,
+            select_for_update=select_for_update
+        )
+        db_events = entries.EntryEvent.objects.select_related(
+            'event'
+        ).filter(
+            entry__in=list(db_entries),
+            event_type=EventTypeChoicesEnum.OBJECT.value,
+        ).values('event').distinct()
+        db_events = events.Event.objects.filter(
+            id__in=db_events
+        ).order_by('event_time')
+        for db_event in db_events:
+            ret.append(self._get_object_event(db_event))
         return ret
 
     def _get_event_entries(self, db_event: events.Event):

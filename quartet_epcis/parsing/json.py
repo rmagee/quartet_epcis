@@ -16,7 +16,7 @@ import json
 
 from EPCPyYes.core.v1_2 import json_decoders, events as yes_events
 from quartet_epcis.models import headers, events
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 
 
 class JSONParser(BusinessEPCISParser):

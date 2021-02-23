@@ -15,10 +15,13 @@ USE_TZ = True
 SECRET_KEY = "+-!+mriut6%tm@v^wi4(x6pz8hga+c*^0v+yvm5#lm+&5b$8on"
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
-        #"NAME": "epcistest.db",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'qu4rtet',
+        'USER': 'qu4rtet',
+        'PASSWORD': 'password',
+        'HOST': 'postgres',
+        'PORT': '5432',
     }
 }
 
@@ -29,7 +32,8 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sites",
     "quartet_epcis",
-    "quartet_capture"
+    "quartet_capture",
+    "quartet_masterdata"
 ]
 
 SITE_ID = 1

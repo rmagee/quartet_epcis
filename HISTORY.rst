@@ -66,3 +66,10 @@ may not contain an explicit namespace declaration.
   so that it puts the Message.id on the rule context after parsing a
   full message and storing to the database.
 * Added more unit tests for the new feature/functions.
+
+1.5 June 2019
++++++++++++++
+* Added a helper to the db_proxy module to return all object events
+  by epc list.
+* Added select_for_update parameter to the dbproxy get object events
+  function.

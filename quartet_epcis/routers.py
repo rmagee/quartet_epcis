@@ -19,25 +19,25 @@ from quartet_epcis import viewsets
 
 
 router = DefaultRouter()
-router.register(r'entries', viewsets.EntryViewSet, base_name='entries')
+router.register(r'entries', viewsets.EntryViewSet, basename='entries')
 router.register(r'entry-events', viewsets.EntryEventViewSet,
-                base_name='entry-events')
-router.register(r'events', viewsets.EventViewSet, base_name='events')
+                basename='entry-events')
+router.register(r'events', viewsets.EventViewSet, basename='events')
 router.register(r'transformation-ids', viewsets.TransformationIDViewSet,
-                base_name='transformation-ids')
+                basename='transformation-ids')
 router.register(r'error-declarations', viewsets.ErrorDeclarationViewSet,
-                base_name='error-declarations')
+                basename='error-declarations')
 router.register(r'quantity-elements', viewsets.QuantityElementViewSet,
-                base_name='quantity-elements')
+                basename='quantity-elements')
 router.register(r'business-transactions', viewsets.BusinessTransactionViewSet,
-                base_name='business-transactions')
+                basename='business-transactions')
 router.register(r'ilmd', viewsets.InstanceLotMasterDataViewSet,
-                base_name='ilmd')
-router.register(r'sources', viewsets.SourceViewSet, base_name='sources')
+                basename='ilmd')
+router.register(r'sources', viewsets.SourceViewSet, basename='sources')
 router.register(r'source-events', viewsets.SourceEventViewSet,
-                base_name='source-events')
+                basename='source-events')
 router.register(r'destinations', viewsets.DestinationViewSet,
-                base_name='destinations')
+                basename='destinations')
 router.register(r'destination-event', viewsets.DestinationEventViewSet,
-                base_name='destinations')
-router.register(r'messages',viewsets.MessageViewSet, base_name='messages')
+                basename='destinations')
+router.register(r'messages',viewsets.MessageViewSet, basename='messages')

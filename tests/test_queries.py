@@ -19,7 +19,7 @@ from EPCPyYes.core.SBDH.template_sbdh import StandardBusinessDocumentHeader
 from quartet_epcis.models import events, choices, headers, entries
 from quartet_epcis.db_api import queries
 from quartet_epcis.parsing.parser import QuartetParser, EPCPyYesParser
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,7 @@ class QueriesTestCase(TestCase):
     query results into `EPCPyYes.core.v1_2.template_event` (and SBDH)
     class instances which allow for clearer code and faster development.
     '''
+
     def test_get_message_by_event(self):
         '''
         Based on a Message model, get the full EPCIS document that
@@ -76,6 +77,19 @@ class QueriesTestCase(TestCase):
         # now test a bad request
         result = qp.get_events_by_ilmd(name='badName', value='badValue')
         self.assertEqual(len(result), 0)
+
+    def test_get_events_by_entry_list(self):
+        self._parse_test_data()
+        entry_list = list(entries.Entry.objects.all())
+        qp = queries.EPCISDBProxy()
+        result = qp.get_events_by_entry_list(entry_list, event_type='ob')
+        self.assertEqual(len(result), 1, 'There should only be one EPCIS'
+                                         ' event returned.')
+        result = qp.get_events_by_entry_list(entry_list, event_type='ag')
+        self.assertEqual(len(result), 1, 'There should be one aggregation '
+                                         'event')
+        result = qp.get_events_by_entry_list(entry_list)
+        self.assertEqual(len(result), 4, 'There should be 4 events.')
 
     def test_get_events(self):
         '''

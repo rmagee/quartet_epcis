@@ -19,7 +19,7 @@ from EPCPyYes.core.v1_2.events import Action
 from quartet_capture import models
 from quartet_capture.rules import RuleContext
 from quartet_epcis.parsing.parser import QuartetParser
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 from quartet_epcis.parsing.json import JSONParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices
@@ -27,6 +27,106 @@ from quartet_epcis.db_api.queries import get_destinations, get_sources
 
 logger = logging.getLogger(__name__)
 
+
+import os
+import django
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.settings'
+django.setup()
+from lxml.etree import XMLSyntaxError
+from django.test import TestCase
+from quartet_epcis.parsing.steps import EPCISParsingStep
+from quartet_capture import models
+from quartet_capture import rules
+from quartet_capture.loader import load_data
+from quartet_capture.rules import TaskMessaging
+
+class TestQuartet_Capture(TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_epcis_rule(self):
+        # create a new rule and give it a test parameter
+        db_task = self._create_task()
+        db_rule = db_task.rule
+        data = self.load_test_data()
+        # declare a rule class
+        rule = rules.Rule(db_rule, db_task)
+        # execute the rule
+        rule.execute(data)
+
+    def _create_rule(self):
+        db_rule = models.Rule()
+        db_rule.name = 'epcis'
+        db_rule.description = 'EPCIS Parsing rule utilizing quartet_epcis.'
+        db_rule.save()
+        rp = models.RuleParameter(name='test name', value='test value',
+                                  rule=db_rule)
+        rp.save()
+        # create a new step
+        epcis_step = models.Step()
+        epcis_step.name = 'parse-epcis'
+        epcis_step.description = 'Parse the EPCIS data and store in database.'
+        epcis_step.order = 1
+        epcis_step.step_class = 'quartet_epcis.parsing.steps.EPCISParsingStep'
+        epcis_step.rule = db_rule
+        epcis_step.save()
+        return db_rule
+
+    def _create_rule_bad_step(self):
+        db_rule = models.Rule()
+        db_rule.name = 'epcis'
+        db_rule.description = 'EPCIS Parsing rule utilizing quartet_epcis.'
+        db_rule.save()
+        rp = models.RuleParameter(name='test name', value='test value',
+                                  rule=db_rule)
+        rp.save()
+        # create a new step
+        epcis_step = models.Step()
+        epcis_step.name = 'no-no-epcis'
+        epcis_step.description = 'I do not exist step.'
+        epcis_step.order = 1
+        epcis_step.step_class = 'quartet_epcis.not_here.steps.IDontExist'
+        epcis_step.rule = db_rule
+        epcis_step.save()
+        return db_rule
+
+
+    def _create_task(self):
+        db_task = models.Task()
+        db_task.status = 'QUEUED'
+        db_task.name = 'test'
+        db_task.rule = self._create_rule()
+        db_task.save()
+        return db_task
+
+
+    def load_test_data(self, file_path='data/epcis.xml'):
+        curpath = os.path.dirname(__file__)
+        f = open(os.path.join(curpath, file_path))
+        return f.read().encode()
+
+
+    def test_task_messages(self):
+        rule = self._create_rule()
+        task = models.Task()
+        task.name='Test task'
+        task.status='RUNNING'
+        task.rule=rule
+        task.save()
+        tm = TaskMessaging(task=task)
+        tm.debug('This is a debugmessage')
+        tm.info('This is an info message')
+        tm.warning('This is a warning!')
+        tm.error('This is an error!!!')
+
+    def tearDown(self):
+        pass
+
+    class PoorStep(EPCISParsingStep):
+        def on_failure(self):
+            raise Exception('I am a bad step')
 
 class TestQuartet(TestCase):
     def setUp(self):
@@ -53,19 +153,6 @@ class TestQuartet(TestCase):
         parser.parse()
         print(parser.event_cache)
         parser.clear_cache()
-        self.confirm_parents()
-        self.confirm_agg_event()
-        self.confirm_transaction_event()
-        self.confirm_object_event()
-        self.confirm_transformation_event()
-
-    def test_a_epcis_step(self):
-        curpath = os.path.dirname(__file__)
-        db_task = self._create_task()
-        context = RuleContext(db_task.rule.name, task_name=db_task.name)
-        step = EPCISParsingStep(db_task)
-        with open(os.path.join(curpath, 'data/epcis.xml')) as f:
-            step.execute(f.read(), context)
         self.confirm_parents()
         self.confirm_agg_event()
         self.confirm_transaction_event()

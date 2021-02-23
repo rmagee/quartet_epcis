@@ -16,11 +16,15 @@
 from rest_framework import viewsets
 from quartet_epcis.models import events, entries, headers
 from quartet_epcis import serializers
+from django_filters.rest_framework.backends import DjangoFilterBackend
+
+from quartet_epcis.filters import EntrySearchFilter
 
 class EntryViewSet(viewsets.ModelViewSet):
     '''
     The default viewset to handle the management of Entries.
     '''
+    filter_backends = [EntrySearchFilter, DjangoFilterBackend]
     queryset = entries.Entry.objects.all()
     serializer_class = serializers.EntrySerializer
     search_fields = ['=identifier',]

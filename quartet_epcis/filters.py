@@ -11,4 +11,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright 2019 SerialLab Corp.  All rights reserved.
+# Copyright 2020 SerialLab Corp.  All rights reserved.
+import re
+from gs123.conversion import BarcodeConverter
+from quartet_masterdata.db import DBProxy
+from gs123.regex import SGTIN_SN_10_13_ALPHA
+from rest_framework.filters import SearchFilter
+from logging import getLogger
+
+logger = getLogger(__name__)
+
+proxy = DBProxy()
+
+class EntrySearchFilter(SearchFilter):
+    """
+    Will convert barcodes to URNS for search if one is detected.
+    """
+
+    def get_search_terms(self, request):
+        terms = super().get_search_terms(request)
+        transformed_terms = []
+        for term in terms:
+            match = SGTIN_SN_10_13_ALPHA.match(term)
+            if match:
+                try:
+                    group_dict = match.groupdict()
+                    cpl = proxy.get_company_prefix_length(group_dict['gtin14'])
+                    transformed_terms.append(BarcodeConverter(company_prefix_length=cpl,
+                                                              barcode_val=term).epc_urn)
+                except:
+                    logger.debug('Could not convert the barcode submitted %s',
+                                 term)
+                    transformed_terms.append(term)
+            else:
+                transformed_terms.append(term)
+        return transformed_terms

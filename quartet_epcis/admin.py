@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from quartet_epcis.models import entries, events, headers
-
+from django.utils.safestring import mark_safe
 
 @admin.register(entries.Entry)
 class EntryAdmin(admin.ModelAdmin):
@@ -22,24 +22,39 @@ class EntryAdmin(admin.ModelAdmin):
     readonly_fields = (
         'last_event_time',
         'last_aggregation_event_time',
-        'is_parent'
+        'is_parent',
+        'parent_id',
+        'top_id',
+        'last_event',
+        'last_disposition',
+        'last_aggregation_event'
     )
+    search_fields = [
+        'identifier'
+    ]
 
 
 @admin.register(entries.EntryEvent)
 class EntryEventAdmin(admin.ModelAdmin):
+    def url(self):
+        return mark_safe('<a class="download-task" href="%s%s">Download</a>' % ('/capture/task-data/', self.task_name))
+
     list_display = (
         'identifier',
         'event',
-        'event_type'
+        'event_type',
+        'task_name',
+        url
     )
+    search_fields = ['identifier']
     readonly_fields = (
         'event_type',
         'entry',
         'event',
         'is_parent',
         'output',
-        'event_time'
+        'event_time',
+        'task_name'
     )
 
 

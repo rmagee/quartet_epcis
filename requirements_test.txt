@@ -8,8 +8,6 @@ codecov>=2.0.0
 recommonmark
 django-model-utils
 haikunator
-django-model-utils
-djangorestframework-xml
 django-filter
 eparsecis
 epcpyyes
@@ -17,3 +15,8 @@ quartet_capture
 # Additional test requirements go here
 python-dateutil
 gs123
+six
+-e git://github.com/rmagee/django-rest-framework-xml.git#egg=djangorestframework-xml
+quartet_masterdata
+psycopg2
+quartet_capture

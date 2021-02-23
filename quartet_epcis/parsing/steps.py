@@ -19,7 +19,7 @@ from quartet_capture import models
 from quartet_capture.rules import Step as RuleStep
 from quartet_capture.rules import RuleContext
 from quartet_epcis.parsing.parser import QuartetParser
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 from quartet_epcis.parsing.json import JSONParser
 from django.core.files.base import File
 from quartet_capture.models import Rule, Step, StepParameter
@@ -89,6 +89,14 @@ class EPCISParsingStep(RuleStep):
         self.loose_enforcement = self.get_boolean_parameter(
             'LooseEnforcement', False)
         self.format = self.get_parameter('Format', 'XML')
+        self.recursive_child_update = self.get_or_create_parameter(
+            'Recursive Child Update', 'False',
+            "Whether or not to update children during observe events."
+        ).lower() == "true"
+        self.use_top_for_update = self.get_or_create_parameter(
+            'Use Top For Child Update', 'True',
+            'Whether or not to use top records or true recursion.'
+        ).lower() == "true"
 
     @property
     def declared_parameters(self):
@@ -100,7 +108,15 @@ class EPCISParsingStep(RuleStep):
                 "Format": "JSON or XML.  If set to XML, the LooseEnforcement "
                           "parameter is examined.  If set to JSON, inbound "
                           "data must be in the EPCPyYes JSON format and will "
-                          "be subject to strong business rule enforcement."
+                          "be subject to strong business rule enforcement.",
+                "Recursive Child Update":
+                    "Boolean, whether or not to recursively update all child"
+                    " entries during object events to reflect the state of "
+                    "their parent.",
+                "Use Top For Child Update":
+                    "Boolean, or not to use the top hierarchical item for "
+                    "child updates or to use a recursive function.  Default "
+                    "is True."
                 }
 
     def execute(self, data, rule_context: RuleContext):
@@ -114,9 +130,25 @@ class EPCISParsingStep(RuleStep):
         self.info('Parsing message %s.dat', rule_context.task_name)
         try:
             if isinstance(data, File):
-                parser = parser_type(data)
+                if parser_type is BusinessEPCISParser:
+                    parser = parser_type(
+                        data,
+                        recursive_child_update=self.recursive_child_update,
+                        child_update_from_top=self.use_top_for_update,
+                        rule_context=rule_context
+                    )
+                else:
+                    parser = parser_type(data)
             else:
-                parser = parser_type(io.BytesIO(data))
+                if parser_type is BusinessEPCISParser:
+                    parser = parser_type(
+                        io.BytesIO(data),
+                        recursive_child_update=self.recursive_child_update,
+                        child_update_from_top=self.use_top_for_update,
+                        rule_context=rule_context
+                    )
+                else:
+                    parser = parser_type(io.BytesIO(data))
         except TypeError:
             try:
                 parser = parser_type(io.BytesIO(data.encode()))
@@ -135,5 +167,4 @@ class EPCISParsingStep(RuleStep):
 
     def on_failure(self):
         pass
-
 
