@@ -19,7 +19,7 @@ from EPCPyYes.core.v1_2.events import Action
 from quartet_capture import models
 from quartet_capture.rules import RuleContext
 from quartet_epcis.parsing.parser import QuartetParser
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 from quartet_epcis.parsing.json import JSONParser
 from quartet_epcis.parsing.steps import EPCISParsingStep
 from quartet_epcis.models import events, entries, choices

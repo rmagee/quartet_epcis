@@ -19,7 +19,7 @@ from EPCPyYes.core.SBDH.template_sbdh import StandardBusinessDocumentHeader
 from quartet_epcis.models import events, choices, headers, entries
 from quartet_epcis.db_api import queries
 from quartet_epcis.parsing.parser import QuartetParser, EPCPyYesParser
-from quartet_epcis.parsing.business_parser import BusinessEPCISParser
+from quartet_epcis.parsing.context_parser import BusinessEPCISParser
 
 logger = logging.getLogger(__name__)
 
