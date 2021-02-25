@@ -29,3 +29,17 @@ class EPCPyYesXMLRenderer(XMLRenderer):
             ret = super().render(data, accepted_media_type, renderer_context)
         return ret
 
+class EPCPyYesTextXMLRenderer(XMLRenderer):
+    '''
+    Overrrides the basic XMLRenderer and uses the
+    `EPCPyYes.core.v1_2.template_events` Event class's .render() output
+    directly since that output is already encoded into XML.
+    '''
+    media_type = 'text/xml'
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        if isinstance(data, str):
+            ret = data.encode(self.charset)
+        else:
+            ret = super().render(data, accepted_media_type, renderer_context)
+        return ret
