@@ -83,3 +83,18 @@ Here is the *Class Path* configuration.
 .. code-block:: text
 
     quartet_epcis.parsing.steps.EPCISParsingStep
+
+Settings Overrides
+==================
+
+By default there are three django model admins defined in the
+package that use an optimized paginator to avoid performance issues.
+The optimized paginator will only offer the first 10 pages of relevant
+information in the list views for the Entry, EntryEvent and Event models.
+
+If you'd like to revert to the standard django admin
+pagination then set the following in your django settings file.
+
+.. code-block:: text
+
+    OPTIMIZE_HIGH_COUNT_MODEL_ADMINS = False

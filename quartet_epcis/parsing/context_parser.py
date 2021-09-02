@@ -43,4 +43,3 @@ class BusinessEPCISParser(bep):
                 entry_event.task_name = self.rule_context.task_name
         super().clear_cache()
 
-
