@@ -19,6 +19,7 @@ use_no_count = getattr(settings, 'OPTIMIZE_HIGH_COUNT_MODEL_ADMINS', True)
 @admin.register(entries.Entry)
 class EntryAdmin(admin.ModelAdmin):
     paginator = NoCountPaginator if use_no_count else Paginator
+    show_full_result_count = False
     list_display = (
         'identifier',
         'last_disposition',
@@ -52,7 +53,7 @@ class EntryAdmin(admin.ModelAdmin):
 @admin.register(entries.EntryEvent)
 class EntryEventAdmin(admin.ModelAdmin):
     paginator = NoCountPaginator if use_no_count else Paginator
-
+    show_full_result_count = False
     def url(self):
         return mark_safe(
             '<a class="download-task" href="%s%s">Download</a>' % (
@@ -162,6 +163,7 @@ class ILMDInline(admin.TabularInline):
 @admin.register(events.Event)
 class EventAdmin(admin.ModelAdmin):
     paginator = NoCountPaginator if use_no_count else Paginator
+    show_full_result_count = False
     list_display = (
         'action', 'biz_step', 'disposition', 'read_point', 'biz_location',
         'type', 'created'
