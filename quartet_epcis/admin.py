@@ -66,6 +66,10 @@ class EntryEventAdmin(admin.ModelAdmin):
         url
     )
     search_fields = ['identifier']
+    raw_id_fields = [
+        'event',
+        'entry'
+    ]
     readonly_fields = (
         'event_type',
         'event_time',
